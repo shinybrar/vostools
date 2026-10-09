@@ -104,7 +104,7 @@ def test_package_workflow_uses_path_filters(package: str, path: Path) -> None:
     for event in ("pull_request", "push"):
         paths = set(on[event]["paths"])
         assert f"libs/{package}/**" in paths
-        assert SHARED_PATHS <= paths
+        assert paths >= SHARED_PATHS
         if package == "fss-cli":
             assert "libs/vosfs/**" in paths
     assert load(path)["jobs"]["test"]["with"] == {

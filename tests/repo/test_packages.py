@@ -10,8 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_every_libs_directory_has_a_package_workflow() -> None:
     packages = {path.parent.name for path in ROOT.glob("libs/*/pyproject.toml")}
     workflows = {
-        path.name.removeprefix("ci-").removesuffix(".yml")
-        for path in (ROOT / ".github" / "workflows").glob("ci-*.yml")
+        path.name.removeprefix("ci-").removesuffix(".yml") for path in (ROOT / ".github" / "workflows").glob("ci-*.yml")
     }
 
     assert packages == workflows == {"vos", "vosfs", "fss-cli"}
