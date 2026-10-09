@@ -8,7 +8,7 @@ capability contract and implementation backlog.
 **OpenCADC VOSpace profile**:
 The VOSpace behavior implemented by the pinned `opencadc/vos` Cavern source
 and tests that bounds the `vosfs` capability contract in
-[`docs/design/trd.md`](docs/design/trd.md).
+[`docs/design/trd.md`](design/trd.md).
 _Avoid_: Full VOSpace 2.1 conformance, generic VOSpace support
 
 **Native capability**:
