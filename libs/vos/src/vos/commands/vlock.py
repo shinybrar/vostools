@@ -69,13 +69,12 @@
 """set the islocked property of a node.
 
 A node is locked by setting the islocked property. When a node is
-locked, it cannot be copied to, moved or deleted. """
+locked, it cannot be copied to, moved or deleted."""
 
 import logging
 import sys
 from .. import vos
-from ..commonparser import CommonParser, exit_on_exception, \
-    set_logging_level_from_args, URI_DESCRIPTION
+from ..commonparser import CommonParser, exit_on_exception, set_logging_level_from_args, URI_DESCRIPTION
 
 DESCRIPTION = """Places/Removes a write lock on a VOSpace Node or reports lock
 status if no action requested.
@@ -87,21 +86,15 @@ status if no action requested.
 
 def vlock():
     parser = CommonParser(description=DESCRIPTION)
-    parser.add_argument(
-        'node',
-        help="node to request / view lock on. (eg. vos:RootNode/File.txt")
+    parser.add_argument("node", help="node to request / view lock on. (eg. vos:RootNode/File.txt")
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--lock", action="store_true", help="Lock the node")
-    action.add_argument("--unlock", action="store_true",
-                        help="unLock the node")
+    action.add_argument("--unlock", action="store_true", help="unLock the node")
 
     try:
         opt = parser.parse_args()
         set_logging_level_from_args(opt)
-        client = vos.Client(
-            vospace_certfile=opt.certfile,
-            vospace_token=opt.token,
-            insecure=opt.insecure)
+        client = vos.Client(vospace_certfile=opt.certfile, vospace_token=opt.token, insecure=opt.insecure)
         node = client.get_node(opt.node)
         if opt.lock or opt.unlock:
             lock = not opt.unlock and opt.lock

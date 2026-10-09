@@ -66,13 +66,11 @@
 # ***********************************************************************
 #
 
-"""set read/write properties of a node.
+"""set read/write properties of a node."""
 
-"""
 from ..vos import Client
 from ..vos import CADC_GMS_PREFIX
-from ..commonparser import CommonParser, set_logging_level_from_args, \
-    URI_DESCRIPTION
+from ..commonparser import CommonParser, set_logging_level_from_args, URI_DESCRIPTION
 from ..commonparser import exit_on_exception
 import logging
 import sys
@@ -87,10 +85,9 @@ def __mode__(mode):
     :return: mode dictionary
      :rtype: re.groupdict
     """
-    _mode = re.match(r"(?P<who>og|go|o|g)(?P<op>[+\-=])(?P<what>rw|wr|r|w)",
-                     mode)
+    _mode = re.match(r"(?P<who>og|go|o|g)(?P<op>[+\-=])(?P<what>rw|wr|r|w)", mode)
     if _mode is None:
-        raise ArgumentTypeError('Invalid mode: {}'.format(mode))
+        raise ArgumentTypeError("Invalid mode: {}".format(mode))
     return _mode.groupdict()
 
 
@@ -120,18 +117,10 @@ def vchmod():
     # TODO:  seperate the sys.argv parsing from the actual command.
 
     parser = CommonParser(description=DESCRIPTION)
-    parser.add_argument(
-        'mode', type=__mode__,
-        help=r'permission setting accepted modes: (og|go|o|g)[+-=](rw|wr|r\w)')
-    parser.add_argument(
-        "node",
-        help="node to set mode on, eg: vos:Root/Container/file.txt")
-    parser.add_argument(
-        'groups', nargs="*",
-        help="name of group(s) to assign read/write permission to")
-    parser.add_option(
-        "-R", "--recursive", action='store_const', const=True,
-        help="Recursive set read/write properties")
+    parser.add_argument("mode", type=__mode__, help=r"permission setting accepted modes: (og|go|o|g)[+-=](rw|wr|r\w)")
+    parser.add_argument("node", help="node to set mode on, eg: vos:Root/Container/file.txt")
+    parser.add_argument("groups", nargs="*", help="name of group(s) to assign read/write permission to")
+    parser.add_option("-R", "--recursive", action="store_const", const=True, help="Recursive set read/write properties")
 
     opt = parser.parse_args()
 
@@ -143,39 +132,30 @@ def vchmod():
 
     props = {}
     try:
-        if 'o' in mode['who']:
-            if mode['op'] == '-':
-                props['ispublic'] = 'false'
+        if "o" in mode["who"]:
+            if mode["op"] == "-":
+                props["ispublic"] = "false"
             else:
-                props['ispublic'] = 'true'
-        if 'g' in mode['who']:
-            if '-' == mode['op']:
+                props["ispublic"] = "true"
+        if "g" in mode["who"]:
+            if "-" == mode["op"]:
                 if not len(group_names) == 0:
-                    raise ValueError(
-                        "Names of groups not valid with remove permission")
-                if 'r' in mode['what']:
-                    props['readgroup'] = None
-                if "w" in mode['what']:
-                    props['writegroup'] = None
+                    raise ValueError("Names of groups not valid with remove permission")
+                if "r" in mode["what"]:
+                    props["readgroup"] = None
+                if "w" in mode["what"]:
+                    props["writegroup"] = None
             else:
-                if not len(group_names) == len(mode['what']):
-                    name = len(mode['what']) > 1 and "names" or "name"
-                    raise ValueError(
-                        "{} group {} required for {}".format(
-                            len(mode['what']), name, mode['what']))
-                if mode['what'].find('r') > -1:
+                if not len(group_names) == len(mode["what"]):
+                    name = len(mode["what"]) > 1 and "names" or "name"
+                    raise ValueError("{} group {} required for {}".format(len(mode["what"]), name, mode["what"]))
+                if mode["what"].find("r") > -1:
                     # remove duplicate whitespaces
-                    read_groups = " ".join(
-                        group_names[mode['what'].find('r')].split())
-                    props['readgroup'] = \
-                        (CADC_GMS_PREFIX +
-                         read_groups.replace(" ", " " + CADC_GMS_PREFIX))
-                if mode['what'].find('w') > -1:
-                    wgroups = " ".join(
-                        group_names[mode['what'].find('w')].split())
-                    props['writegroup'] = \
-                        (CADC_GMS_PREFIX +
-                         wgroups.replace(" ", " " + CADC_GMS_PREFIX))
+                    read_groups = " ".join(group_names[mode["what"].find("r")].split())
+                    props["readgroup"] = CADC_GMS_PREFIX + read_groups.replace(" ", " " + CADC_GMS_PREFIX)
+                if mode["what"].find("w") > -1:
+                    wgroups = " ".join(group_names[mode["what"].find("w")].split())
+                    props["writegroup"] = CADC_GMS_PREFIX + wgroups.replace(" ", " " + CADC_GMS_PREFIX)
     except ValueError as er:
         parser.print_usage()
         logging.error(str(er))
@@ -184,27 +164,24 @@ def vchmod():
     logging.debug("Setting {} on {}".format(props, opt.node))
 
     try:
-        client = Client(vospace_certfile=opt.certfile,
-                        vospace_token=opt.token,
-                        insecure=opt.insecure)
+        client = Client(vospace_certfile=opt.certfile, vospace_token=opt.token, insecure=opt.insecure)
         node = client.get_node(opt.node)
         node.props.clear()
         node.clear_properties()
-        if 'readgroup' in props:
-            node.chrgrp(props['readgroup'])
-        if 'writegroup' in props:
-            node.chwgrp(props['writegroup'])
-        if 'ispublic' in props:
-            node.set_public(props['ispublic'])
+        if "readgroup" in props:
+            node.chrgrp(props["readgroup"])
+        if "writegroup" in props:
+            node.chwgrp(props["writegroup"])
+        if "ispublic" in props:
+            node.set_public(props["ispublic"])
         logging.debug("Node: {0}".format(node))
         successes, failures = client.update(node, opt.recursive)
         if opt.recursive:
             if failures:
-                logging.error('WARN. updated count: {}, failed count: {}\n'.
-                              format(successes, failures))
+                logging.error("WARN. updated count: {}, failed count: {}\n".format(successes, failures))
                 sys.exit(-1)
             else:
-                logging.info('DONE. updated count: {}\n'.format(successes))
+                logging.info("DONE. updated count: {}\n".format(successes))
     except Exception as ex:
         exit_on_exception(ex)
 

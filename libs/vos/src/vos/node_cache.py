@@ -66,18 +66,20 @@
 # ***********************************************************************
 #
 
-""" keep track of vospace nodes that have been already been accessed during
+"""keep track of vospace nodes that have been already been accessed during
 the current session."""
+
 import threading
 import logging
 
-logger = logging.getLogger('vos')
+logger = logging.getLogger("vos")
 
 
 # logger.setLevel(logging.ERROR)
 
+
 class NodeCache(dict):
-    """ A dictionary like object that provides the ability to look up a
+    """A dictionary like object that provides the ability to look up a
     VOSpace nodes metadata.
 
     usage:
@@ -97,7 +99,7 @@ class NodeCache(dict):
     """
 
     def __init__(self, *args):
-        """ Initialize the node cache."""
+        """Initialize the node cache."""
         dict.__init__(self, args)
         self.lock = threading.Lock()
         self.watched_nodes = []
@@ -108,14 +110,14 @@ class NodeCache(dict):
 
         :param uri: the VOSpace uri to watch
         """
-        return self.Watch(self, uri.rstrip('/'))
+        return self.Watch(self, uri.rstrip("/"))
 
     def volatile(self, uri):
         """Factory for volatile objects.
 
         :param uri: the VOSpace uri to tag as volatile
         """
-        return self.Volatile(self, uri.rstrip('/'))
+        return self.Volatile(self, uri.rstrip("/"))
 
     def __missing__(self, key):
         """Attempting to access a non-cached node returns None rather than
@@ -136,14 +138,14 @@ class NodeCache(dict):
             w.insert(value)
 
     def __getitem__(self, key):
-        return dict.__getitem__(self, key.rstrip('/'))
+        return dict.__getitem__(self, key.rstrip("/"))
 
     def __contains__(self, key):
-        return dict.__contains__(self, key.rstrip('/'))
+        return dict.__contains__(self, key.rstrip("/"))
 
     class Volatile(object):
-        """ Objects that mark a code segment where a uri is volatile and
-            the Node in the cache shouldn't be used."""
+        """Objects that mark a code segment where a uri is volatile and
+        the Node in the cache shouldn't be used."""
 
         def __init__(self, node_cache, uri):
             """
@@ -155,12 +157,12 @@ class NodeCache(dict):
             :type uri: str
             """
             self.node_cache = node_cache
-            self.uri = uri.rstrip('/')
+            self.uri = uri.rstrip("/")
 
         def __enter__(self):
-            """ Mark any sub-trees being watched as being dirty
-                add to self.nodeCache.volatileNodes.
-                Remove any cached nodes in the volatile subtree.
+            """Mark any sub-trees being watched as being dirty
+            add to self.nodeCache.volatileNodes.
+            Remove any cached nodes in the volatile subtree.
             """
 
             with self.node_cache.lock:
@@ -174,26 +176,24 @@ class NodeCache(dict):
                         del self.node_cache[uri]
 
                 # Clear the parent node as well to force an update
-                parent = self.uri[:self.uri.rfind("/")]
+                parent = self.uri[: self.uri.rfind("/")]
                 self.node_cache.pop(parent, None)
 
                 # Mark any watched nodes in the volatile sub-tree dirty
                 for watchedNode in self.node_cache.watched_nodes:
-                    if watchedNode.uri.startswith(self.uri) or\
-                            (watchedNode.uri == parent):
+                    if watchedNode.uri.startswith(self.uri) or (watchedNode.uri == parent):
                         watchedNode.dirty = True
 
             return self
 
         def __exit__(self, exc_type, exc_value, traceback):
-            """ Remove this volitile object from the list of active volatiles.
-            """
+            """Remove this volitile object from the list of active volatiles."""
             with self.node_cache.lock:
                 self.node_cache.volatile_nodes.remove(self)
 
     class Watch(object):
-        """ Objects that mark a code segment where a node has been read from
-            vospace, and is intended to be cached.
+        """Objects that mark a code segment where a node has been read from
+        vospace, and is intended to be cached.
         """
 
         def __init__(self, node_cache, uri):
@@ -227,7 +227,7 @@ class NodeCache(dict):
                 self.node_cache.watched_nodes.remove(self)
 
         def insert(self, value):
-            """ Insert an value, likely node object, into the cache, but only
+            """Insert an value, likely node object, into the cache, but only
             if the watch is not dirty."""
             if not self.dirty:
                 # noinspection PyCallByClass

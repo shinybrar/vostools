@@ -74,11 +74,10 @@ from unittest.mock import Mock, patch
 from vos import commands as cmds
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
-TESTDATA_DIR = os.path.join(THIS_DIR, 'data')
+TESTDATA_DIR = os.path.join(THIS_DIR, "data")
 
 
 class MyExitError(Exception):
-
     def __init__(self):
         self.message = "MyExitError"
 
@@ -96,33 +95,31 @@ class TestCli(unittest.TestCase):
     and with the --help flag against a known output.
     """
 
-    @patch('sys.exit', Mock(side_effect=outputs))
+    @patch("sys.exit", Mock(side_effect=outputs))
     def test_cli_noargs(self):
         """Test the invocation of a command without arguments"""
 
         # get a list of all available commands
         for cmd in cmds.__all__:
-            with patch('sys.stdout', new_callable=StringIO) as stdout_mock:
-                with open(os.path.join(TESTDATA_DIR, '{}.txt'.format(cmd)),
-                          'r') as f:
+            with patch("sys.stdout", new_callable=StringIO) as stdout_mock:
+                with open(os.path.join(TESTDATA_DIR, "{}.txt".format(cmd)), "r") as f:
                     usage = f.read()
-                sys.argv = '{}'.format(cmd).split()
+                sys.argv = "{}".format(cmd).split()
                 with self.assertRaises(MyExitError):
                     cmd_attr = getattr(cmds, cmd)
                     cmd_attr()
                     self.assertTrue(stdout_mock.getvalue().contains(usage))
 
-    @patch('sys.exit', Mock(side_effect=outputs))
+    @patch("sys.exit", Mock(side_effect=outputs))
     def test_cli_help_arg(self):
         """Test the invocation of a command with --help argument"""
 
         # get a list of all available commands
         for cmd in cmds.__all__:
-            with patch('sys.stdout', new_callable=StringIO) as stdout_mock:
-                with open(os.path.join(
-                        TESTDATA_DIR, 'help_{}.txt'.format(cmd)), 'r') as f:
+            with patch("sys.stdout", new_callable=StringIO) as stdout_mock:
+                with open(os.path.join(TESTDATA_DIR, "help_{}.txt".format(cmd)), "r") as f:
                     usage = f.read()
-                sys.argv = '{}'.format(cmd).split()
+                sys.argv = "{}".format(cmd).split()
                 with self.assertRaises(MyExitError):
                     cmd_attr = getattr(cmds, cmd)
                     cmd_attr()

@@ -66,10 +66,10 @@
 
 
 """A set of Python Classes for connecting to and interacting with a VOSpace
-   service.
+service.
 
-   Connections to VOSpace are made using a SSL X509 certificat which is
-   stored in a .pem file.
+Connections to VOSpace are made using a SSL X509 certificat which is
+stored in a .pem file.
 """
 
 import warnings
@@ -104,7 +104,8 @@ from cadcutils import net, exceptions, util
 from . import md5_cache
 
 from urllib.parse import urlparse, parse_qs
-logger = logging.getLogger('vos')
+
+logger = logging.getLogger("vos")
 
 logger.addHandler(logging.NullHandler())
 
@@ -120,68 +121,68 @@ MAX_RETRY_TIME = 900  # maximum time for retries before giving up...
 MAX_INTERMTTENT_RETRIES = 3
 
 VOSPACE_ARCHIVE = os.getenv("VOSPACE_ARCHIVE", "vospace")
-HEADER_DELEG_TOKEN = 'X-CADC-DelegationToken'
-HEADER_CONTENT_LENGTH = 'X-CADC-Content-Length'
-HEADER_PARTIAL_READ = 'X-CADC-Partial-Read'
+HEADER_DELEG_TOKEN = "X-CADC-DelegationToken"
+HEADER_CONTENT_LENGTH = "X-CADC-Content-Length"
+HEADER_PARTIAL_READ = "X-CADC-Partial-Read"
 
 CADC_GMS_PREFIX = "ivo://cadc.nrc.ca/gms?"
 
-VO_PROPERTY_URI_ISLOCKED = 'ivo://cadc.nrc.ca/vospace/core#islocked'
-VO_VIEW_DEFAULT = 'ivo://ivoa.net/vospace/core#defaultview'
-VO_PROPERTY_LENGTH = 'ivo://ivoa.net/vospace/core#length'
-VO_PROPERTY_DATE = 'ivo://ivoa.net/vospace/core#date'
-VO_PROPERTY_MD5 = 'ivo://ivoa.net/vospace/core#MD5'
+VO_PROPERTY_URI_ISLOCKED = "ivo://cadc.nrc.ca/vospace/core#islocked"
+VO_VIEW_DEFAULT = "ivo://ivoa.net/vospace/core#defaultview"
+VO_PROPERTY_LENGTH = "ivo://ivoa.net/vospace/core#length"
+VO_PROPERTY_DATE = "ivo://ivoa.net/vospace/core#date"
+VO_PROPERTY_MD5 = "ivo://ivoa.net/vospace/core#MD5"
 # CADC specific views
-VO_CADC_VIEW_URI = 'ivo://cadc.nrc.ca/vospace/view'
+VO_CADC_VIEW_URI = "ivo://cadc.nrc.ca/vospace/view"
 
 SSO_SECURITY_METHODS = {
-    'tls-with-certificate': 'ivo://ivoa.net/sso#tls-with-certificate',
-    'cookie': 'ivo://ivoa.net/sso#cookie',
-    'token': 'vos://cadc.nrc.ca~vospace/CADC/std/Auth#token-1.0'
+    "tls-with-certificate": "ivo://ivoa.net/sso#tls-with-certificate",
+    "cookie": "ivo://ivoa.net/sso#cookie",
+    "token": "vos://cadc.nrc.ca~vospace/CADC/std/Auth#token-1.0",
 }
 
-SUPPORTED_SERVER_VERSIONS = {'vault': '1.1',
-                             'cavern': '1.0',
-                             'storage-inventory/minoc': '1.0'}
+SUPPORTED_SERVER_VERSIONS = {"vault": "1.1", "cavern": "1.0", "storage-inventory/minoc": "1.0"}
 
 # this should one day go into its own uws library
-UWS_NSMAP = {'uws': 'http://www.ivoa.net/xml/UWS/v1.0',
-             'xlink': 'http://www.w3.org/1999/xlink'}
+UWS_NSMAP = {"uws": "http://www.ivoa.net/xml/UWS/v1.0", "xlink": "http://www.w3.org/1999/xlink"}
 
 
 # sorting-related uris
 class SortNodeProperty(Enum):
-    """ URIs of node properties used for sorting"""
+    """URIs of node properties used for sorting"""
+
     LENGTH = VO_PROPERTY_LENGTH
     DATE = VO_PROPERTY_DATE
 
 
-CADC_VO_VIEWS = {'data': '{}#data'.format(VO_CADC_VIEW_URI),
-                 'manifest': '{}#manifest'.format(VO_CADC_VIEW_URI),
-                 'rss': '{}#rss'.format(VO_CADC_VIEW_URI),
-                 'cutout': '{}#cutout'.format(VO_CADC_VIEW_URI)}
+CADC_VO_VIEWS = {
+    "data": "{}#data".format(VO_CADC_VIEW_URI),
+    "manifest": "{}#manifest".format(VO_CADC_VIEW_URI),
+    "rss": "{}#rss".format(VO_CADC_VIEW_URI),
+    "cutout": "{}#cutout".format(VO_CADC_VIEW_URI),
+}
 
 # md5sum of a size zero file
-ZERO_MD5 = 'd41d8cd98f00b204e9800998ecf8427e'
+ZERO_MD5 = "d41d8cd98f00b204e9800998ecf8427e"
 
 
 # Pattern matching in filenames to extract out the RA/DEC/RADIUS part
 FILENAME_PATTERN_MAGIC = re.compile(
-    r'^(?P<filename>[/_\-=+!,;:@&*$.\w~]*)'  # legal filename string
-    r'(?P<cutout>'  # Look for a cutout part
-    r'(?P<pix>(\[\d*:?\d*\])?'
-    r'(\[[+-]?\*?\d*:?[+-]?\d*,?[+-]?\*?\d*:?[+-]?\d*\]))'  # pixel
-    r'|'  # OR
-    r'(?P<wcs>'  # possible wcs cutout
-    r'\((?P<ra>[+]?\d*(\.\d*)?),'  # ra part
-    r'(?P<dec>[\-+]?\d*(\.\d*)?),'  # dec part
-    r'(?P<rad>\d*(\.\d*)?)\))'  # radius of cutout
-    r')?$'
-    )
-MAGIC_GLOB_CHECK = re.compile('[*?[]')
+    r"^(?P<filename>[/_\-=+!,;:@&*$.\w~]*)"  # legal filename string
+    r"(?P<cutout>"  # Look for a cutout part
+    r"(?P<pix>(\[\d*:?\d*\])?"
+    r"(\[[+-]?\*?\d*:?[+-]?\d*,?[+-]?\*?\d*:?[+-]?\d*\]))"  # pixel
+    r"|"  # OR
+    r"(?P<wcs>"  # possible wcs cutout
+    r"\((?P<ra>[+]?\d*(\.\d*)?),"  # ra part
+    r"(?P<dec>[\-+]?\d*(\.\d*)?),"  # dec part
+    r"(?P<rad>\d*(\.\d*)?)\))"  # radius of cutout
+    r")?$"
+)
+MAGIC_GLOB_CHECK = re.compile("[*?[]")
 
 
-logging.getLogger('requests').setLevel(logging.ERROR)
+logging.getLogger("requests").setLevel(logging.ERROR)
 
 
 def convert_vospace_time_to_seconds(str_date):
@@ -194,7 +195,7 @@ def convert_vospace_time_to_seconds(str_date):
     :rtype: datetime
     """
     right = str_date.rfind(":") + 3
-    mtime = time.mktime(time.strptime(str_date[0:right], '%Y-%m-%dT%H:%M:%S'))
+    mtime = time.mktime(time.strptime(str_date[0:right], "%Y-%m-%dT%H:%M:%S"))
     utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
     return mtime - round((utc_now - datetime.now()).total_seconds())
 
@@ -202,9 +203,7 @@ def convert_vospace_time_to_seconds(str_date):
 class Connection(object):
     """Class to hold and act on the X509 certificate"""
 
-    def __init__(self, vospace_certfile=None, vospace_token=None,
-                 http_debug=False,
-                 resource_id=None, insecure=False):
+    def __init__(self, vospace_certfile=None, vospace_token=None, http_debug=False, resource_id=None, insecure=False):
         """Setup the Certificate for later usage
 
         vospace_certfile -- where to store the certificate, if None then
@@ -221,9 +220,7 @@ class Connection(object):
         before the connection is downgraded to 'anonymous'
         """
         if http_debug is not False:
-            warnings.warn(
-                "Connection object no longer uses http_debug setting.",
-                DeprecationWarning)
+            warnings.warn("Connection object no longer uses http_debug setting.", DeprecationWarning)
         self.vo_token = None
         session_headers = None
         self.resource_id = resource_id
@@ -235,36 +232,32 @@ class Connection(object):
             cert = vospace_certfile
             if cert is not None:
                 if len(cert) == 0:
-                    logger.debug('Anonymous access (certfile=Anonymous)')
+                    logger.debug("Anonymous access (certfile=Anonymous)")
                     self.subject = net.Subject()
                 elif not os.access(vospace_certfile, os.F_OK):
-                    logger.warning(
-                        "Could not access certificate at {0}.".format(cert))
+                    logger.warning("Could not access certificate at {0}.".format(cert))
                     cert = None
                 else:
-                    logger.debug(
-                        'Authenticate with cert {}'.format(vospace_certfile))
+                    logger.debug("Authenticate with cert {}".format(vospace_certfile))
                     self.subject = net.Subject(certificate=vospace_certfile)
 
             if cert is None:
-                if os.access(os.path.join(os.environ['HOME'], ".netrc"),
-                             os.F_OK):
-                    logger.debug(
-                        ('Authenticate with user/password '
-                         'from $HOME/.netrc file'))
+                if os.access(os.path.join(os.environ["HOME"], ".netrc"), os.F_OK):
+                    logger.debug(("Authenticate with user/password from $HOME/.netrc file"))
                     self.subject = net.Subject(netrc=True)
                 else:
-                    logger.warning(
-                        ('No valid authentication found. '
-                         'Reverting to anonymous.'))
+                    logger.warning(("No valid authentication found. Reverting to anonymous."))
                     self.subject = net.Subject()
-        host = os.getenv('VOSPACE_WEBSERVICE', os.getenv('LOCAL_VOSPACE_WEBSERVICE', None))
-        self.ws_client = net.BaseWsClient(resource_id, self.subject,
-                                          'vos/' + version,
-                                          host=host,
-                                          session_headers=session_headers,
-                                          insecure=insecure,
-                                          server_versions=SUPPORTED_SERVER_VERSIONS)
+        host = os.getenv("VOSPACE_WEBSERVICE", os.getenv("LOCAL_VOSPACE_WEBSERVICE", None))
+        self.ws_client = net.BaseWsClient(
+            resource_id,
+            self.subject,
+            "vos/" + version,
+            host=host,
+            session_headers=session_headers,
+            insecure=insecure,
+            server_versions=SUPPORTED_SERVER_VERSIONS,
+        )
         EndPoints.subject = self.subject
 
     @property
@@ -278,31 +271,30 @@ class Connection(object):
         :param url: a VOSpace uri
         """
         if url is not None:
-            raise OSError(errno.ENOSYS,
-                          "Connections are no longer set per URL.")
+            raise OSError(errno.ENOSYS, "Connections are no longer set per URL.")
         return self.ws_client
 
 
 class Node(object):
     """A VOSpace node"""
 
-    IVOAURL = 'ivo://ivoa.net/vospace/core'
-    VOSNS = 'http://www.ivoa.net/xml/VOSpace/v2.0'
-    VOSVERSION = '2.1'
-    XSINS = 'http://www.w3.org/2001/XMLSchema-instance'
-    TYPE = '{{{}}}type'.format(XSINS)
-    NODES = '{{{}}}nodes'.format(VOSNS)
-    NODE = '{{{}}}node'.format(VOSNS)
-    PROTOCOL = '{{{}}}protocol'.format(VOSNS)
-    PROPERTIES = '{{{}}}properties'.format(VOSNS)
-    PROPERTY = '{{{}}}property'.format(VOSNS)
-    ACCEPTS = '{{{}}}accepts'.format(VOSNS)
-    PROVIDES = '{{{}}}provides'.format(VOSNS)
-    ENDPOINT = '{{{}}}endpoint'.format(VOSNS)
-    TARGET = '{{{}}}target'.format(VOSNS)
-    DATA_NODE = 'vos:DataNode'
-    LINK_NODE = 'vos:LinkNode'
-    CONTAINER_NODE = 'vos:ContainerNode'
+    IVOAURL = "ivo://ivoa.net/vospace/core"
+    VOSNS = "http://www.ivoa.net/xml/VOSpace/v2.0"
+    VOSVERSION = "2.1"
+    XSINS = "http://www.w3.org/2001/XMLSchema-instance"
+    TYPE = "{{{}}}type".format(XSINS)
+    NODES = "{{{}}}nodes".format(VOSNS)
+    NODE = "{{{}}}node".format(VOSNS)
+    PROTOCOL = "{{{}}}protocol".format(VOSNS)
+    PROPERTIES = "{{{}}}properties".format(VOSNS)
+    PROPERTY = "{{{}}}property".format(VOSNS)
+    ACCEPTS = "{{{}}}accepts".format(VOSNS)
+    PROVIDES = "{{{}}}provides".format(VOSNS)
+    ENDPOINT = "{{{}}}endpoint".format(VOSNS)
+    TARGET = "{{{}}}target".format(VOSNS)
+    DATA_NODE = "vos:DataNode"
+    LINK_NODE = "vos:LinkNode"
+    CONTAINER_NODE = "vos:ContainerNode"
 
     def __init__(self, node, node_type=None, properties=None, subnodes=None):
         """Create a Node object based on the DOM passed to the init method
@@ -344,7 +336,7 @@ class Node(object):
             raise LookupError("no node found or created?")
 
         self.node = node
-        self.node.set('xmlns:vos', self.VOSNS)
+        self.node.set("xmlns:vos", self.VOSNS)
         self.update()
 
     def __eq__(self, node):
@@ -363,19 +355,17 @@ class Node(object):
         if self.type == "vos:LinkNode":
             self.target = self.node.findtext(Node.TARGET)
 
-        self.uri = self.node.get('uri')
+        self.uri = self.node.get("uri")
 
         self.name = os.path.basename(self.uri)
         for propertiesNode in self.node.findall(Node.PROPERTIES):
             self.set_props(propertiesNode)
         self.is_public = False
-        if self.props.get('ispublic', 'false') == 'true':
+        if self.props.get("ispublic", "false") == "true":
             self.is_public = True
-        logger.debug(
-            "{0} {1} -> {2}".format(self.uri, VO_PROPERTY_URI_ISLOCKED,
-                                    self.props))
-        self.groupwrite = self.props.get('groupwrite', '')
-        self.groupread = self.props.get('groupread', '')
+        logger.debug("{0} {1} -> {2}".format(self.uri, VO_PROPERTY_URI_ISLOCKED, self.props))
+        self.groupwrite = self.props.get("groupwrite", "")
+        self.groupread = self.props.get("groupread", "")
         logger.debug("Setting file attributes via setattr")
         self.setattr()
         logger.debug("Setting file x-attributes via setxattr")
@@ -388,10 +378,8 @@ class Node(object):
         :param value: the property value
         """
         properties = self.node.find(Node.PROPERTIES)
-        uri = '{}#{}'.format(Node.IVOAURL, key)
-        ElementTree.SubElement(properties, Node.PROPERTY,
-                               attrib={'uri': uri,
-                                       'readOnly': 'false'}).text = value
+        uri = "{}#{}".format(Node.IVOAURL, key)
+        ElementTree.SubElement(properties, Node.PROPERTY, attrib={"uri": uri, "readOnly": "false"}).text = value
 
     def __str__(self):
         """Convert the Node to a string representation of the Node"""
@@ -402,9 +390,9 @@ class Node(object):
         data = []
         file_handle = Dummy()
         file_handle.write = data.append
-        ElementTree.ElementTree(self.node).write(file_handle, encoding='UTF-8')
+        ElementTree.ElementTree(self.node).write(file_handle, encoding="UTF-8")
         # concatenate and decode the string
-        return b''.join(data).decode('UTF-8')
+        return b"".join(data).decode("UTF-8")
 
     def setattr(self, attr=None):
         """return / augment a dictionary of attributes associated with the Node
@@ -421,62 +409,61 @@ class Node(object):
         # Only one date provided by VOSpace, so use this as all possible dates.
 
         access_time = time.time()
-        if not self.props.get('date', None):
+        if not self.props.get("date", None):
             modified_time = access_time
         else:
             # mktime is expecting a localtime but we're sending a UT date, so
             # some correction will be needed
-            modified_time = convert_vospace_time_to_seconds(
-                self.props.get('date'))
+            modified_time = convert_vospace_time_to_seconds(self.props.get("date"))
 
-        self.attr['st_ctime'] = attr.get('st_ctime', modified_time)
-        self.attr['st_mtime'] = attr.get('st_mtime', modified_time)
-        self.attr['st_atime'] = access_time
+        self.attr["st_ctime"] = attr.get("st_ctime", modified_time)
+        self.attr["st_mtime"] = attr.get("st_mtime", modified_time)
+        self.attr["st_atime"] = access_time
 
         # set the MODE by or'ing together all flags from stat
         st_mode = 0
         st_nlink = 1
-        if self.type == 'vos:ContainerNode':
+        if self.type == "vos:ContainerNode":
             st_mode |= stat.S_IFDIR
             st_nlink = max(2, len(self.get_info_list()) + 2)
             # if getInfoList length is < 0 we have a problem elsewhere, so
             # above hack solves that problem.
-        elif self.type == 'vos:LinkNode':
+        elif self.type == "vos:LinkNode":
             st_mode |= stat.S_IFLNK
         else:
             st_mode |= stat.S_IFREG
-        self.attr['st_nlink'] = st_nlink
+        self.attr["st_nlink"] = st_nlink
 
         # Set the OWNER permissions: all vospace Nodes have read/write/execute
         # by owner
         st_mode |= stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
 
         # Set the GROUP permissions
-        if self.props.get('groupwrite', "NONE") != "NONE":
+        if self.props.get("groupwrite", "NONE") != "NONE":
             st_mode |= stat.S_IWGRP
-        if self.props.get('groupread', "NONE") != "NONE":
+        if self.props.get("groupread", "NONE") != "NONE":
             st_mode |= stat.S_IRGRP
             st_mode |= stat.S_IXGRP
 
         # Set the OTHER permissions
-        if self.props.get('ispublic', 'false') == 'true':
+        if self.props.get("ispublic", "false") == "true":
             # If you can read the file then you can execute too.
             # Public does NOT mean writeable.  EVER
             st_mode |= stat.S_IROTH | stat.S_IXOTH
 
-        self.attr['st_mode'] = attr.get('st_mode', st_mode)
+        self.attr["st_mode"] = attr.get("st_mode", st_mode)
 
         # We set the owner and group bits to be those of the currently running
         # process. This is a hack since we don't have an easy way to figure
         # these out.
         # TODO Come up with a better approach to uid setting
-        self.attr['st_uid'] = attr.get('st_uid', os.getuid())
-        self.attr['st_gid'] = attr.get('st_uid', os.getgid())
+        self.attr["st_uid"] = attr.get("st_uid", os.getuid())
+        self.attr["st_gid"] = attr.get("st_uid", os.getgid())
 
-        st_size = int(self.props.get('length', 0))
-        self.attr['st_size'] = st_size > 0 and st_size or 0
+        st_size = int(self.props.get("length", 0))
+        self.attr["st_size"] = st_size > 0 and st_size or 0
 
-        self.attr['st_blocks'] = self.attr['st_size'] // 512
+        self.attr["st_blocks"] = self.attr["st_size"] // 512
 
     def setxattr(self, attrs=None):
         """Initialize the extended attributes using the Node properties that
@@ -486,9 +473,7 @@ class Node(object):
         source, not supported.
         """
         if attrs is not None:
-            raise OSError(
-                errno.ENOSYS,
-                "No externally set extended Attributes for vofs yet.")
+            raise OSError(errno.ENOSYS, "No externally set extended Attributes for vofs yet.")
 
         for key in self.props:
             if key in Client.vosProperties:
@@ -505,10 +490,9 @@ class Node(object):
         """
         logger.debug("Setting groups to: {0}".format(group))
         if group is not None and len(group.split()) > 3:
-            raise AttributeError(
-                "Exceeded max of 4 write groups: {0}<-".format(group.split()))
+            raise AttributeError("Exceeded max of 4 write groups: {0}<-".format(group.split()))
         self.groupwrite = group
-        return self.change_prop('groupwrite', group)
+        return self.change_prop("groupwrite", group)
 
     def chrgrp(self, group):
         """Set the groupread value to group for this node
@@ -517,11 +501,10 @@ class Node(object):
         :type group: unicode
         """
         if group is not None and len(group.split()) > 3:
-            raise AttributeError(
-                "Exceeded max of 4 read groups: {0}<-".format(group))
+            raise AttributeError("Exceeded max of 4 read groups: {0}<-".format(group))
 
         self.groupread = group
-        return self.change_prop('groupread', group)
+        return self.change_prop("groupread", group)
 
     def set_public(self, value):
         """
@@ -529,7 +512,7 @@ class Node(object):
 
         :type value: unicode
         """
-        return self.change_prop('ispublic', value)
+        return self.change_prop("ispublic", value)
 
     @staticmethod
     def fix_prop(prop):
@@ -539,31 +522,33 @@ class Node(object):
         property.
         :rtype unicode
         """
-        if prop in ['title',
-                    'creator',
-                    'subject',
-                    'description',
-                    'publisher',
-                    'contributer',
-                    'date',
-                    'type',
-                    'format',
-                    'identifier',
-                    'source',
-                    'language',
-                    'relation',
-                    'coverage',
-                    'rights',
-                    'availableSpace',
-                    'groupread',
-                    'groupwrite',
-                    'publicread',
-                    'quota',
-                    'length',
-                    'MD5',
-                    'mtime',
-                    'ctime',
-                    'ispublic']:
+        if prop in [
+            "title",
+            "creator",
+            "subject",
+            "description",
+            "publisher",
+            "contributer",
+            "date",
+            "type",
+            "format",
+            "identifier",
+            "source",
+            "language",
+            "relation",
+            "coverage",
+            "rights",
+            "availableSpace",
+            "groupread",
+            "groupwrite",
+            "publicread",
+            "quota",
+            "length",
+            "MD5",
+            "mtime",
+            "ctime",
+            "ispublic",
+        ]:
             prop = Node.IVOAURL + "#" + prop
 
         return prop
@@ -571,7 +556,7 @@ class Node(object):
     @staticmethod
     def set_prop():
         """Build the XML for a given node"""
-        raise NotImplementedError('No set prop.')
+        raise NotImplementedError("No set prop.")
 
     def change_prop(self, key, value):
         """Change the node property 'key' to 'value'.
@@ -589,15 +574,15 @@ class Node(object):
         properties = self.node.findall(Node.PROPERTIES)
         for props in properties:
             for prop in props.findall(Node.PROPERTY):
-                if uri != prop.attrib.get('uri', None):
+                if uri != prop.attrib.get("uri", None):
                     continue
                 found = True
-                if getattr(prop, 'text') == value:
+                if getattr(prop, "text") == value:
                     break
                 changed = True
                 if value is None:
                     # this is actually a delete property
-                    prop.attrib['xsi:nil'] = 'true'
+                    prop.attrib["xsi:nil"] = "true"
                     prop.attrib["xmlns:xsi"] = Node.XSINS
                     prop.text = ""
                     self.props[self.get_prop_name(uri)] = None
@@ -607,12 +592,12 @@ class Node(object):
                 return changed
         # must not have had this kind of property already, so set value
         property_node = ElementTree.SubElement(properties[0], Node.PROPERTY)
-        property_node.attrib['readOnly'] = "false"
-        property_node.attrib['uri'] = uri
+        property_node.attrib["readOnly"] = "false"
+        property_node.attrib["uri"] = uri
         if value is not None:
             property_node.text = value
         else:
-            property_node.attrib['xsi:nil'] = 'true'
+            property_node.attrib["xsi:nil"] = "true"
         self.props[self.get_prop_name(uri)] = value
         return changed
 
@@ -631,23 +616,22 @@ class Node(object):
         changed = 0
 
         if mode & stat.S_IROTH:
-            changed += self.set_public('true')
+            changed += self.set_public("true")
         else:
-            changed += self.set_public('false')
+            changed += self.set_public("false")
 
         if mode & stat.S_IRGRP:
             changed += self.chrgrp(self.groupread)
         else:
-            changed += self.chrgrp('')
+            changed += self.chrgrp("")
 
         if mode & stat.S_IWGRP:
             changed += self.chwgrp(self.groupwrite)
         else:
-            changed += self.chwgrp('')
+            changed += self.chwgrp("")
         return changed > 0
 
-    def create(self, uri, node_type="vos:DataNode", properties=None,
-               subnodes=None):
+    def create(self, uri, node_type="vos:DataNode", properties=None, subnodes=None):
         """Build the XML needed to represent a VOSpace node returns an
         ElementTree representation of the XML
 
@@ -665,7 +649,7 @@ class Node(object):
         """
         if not subnodes:
             subnodes = []
-        elif node_type != 'vos:ContainerNode':
+        elif node_type != "vos:ContainerNode":
             raise ValueError("Only Container Nodes can have subnodes")
 
         if not properties:
@@ -679,18 +663,17 @@ class Node(object):
         node.attrib["uri"] = uri
 
         # create a properties section
-        if ('type' not in properties) and (mimetypes.guess_type(uri)[0]):
-            properties['type'] = mimetypes.guess_type(uri)[0]
+        if ("type" not in properties) and (mimetypes.guess_type(uri)[0]):
+            properties["type"] = mimetypes.guess_type(uri)[0]
         properties_node = ElementTree.SubElement(node, Node.PROPERTIES)
         for prop in properties.keys():
-            property_node = ElementTree.SubElement(properties_node,
-                                                   Node.PROPERTY)
-            property_node.attrib['readOnly'] = "false"
+            property_node = ElementTree.SubElement(properties_node, Node.PROPERTY)
+            property_node.attrib["readOnly"] = "false"
             property_node.attrib["uri"] = self.fix_prop(prop)
             if properties[prop] is None:
                 # Setting the property value to None indicates that this is
                 # actually a delete
-                property_node.attrib['xsi:nil'] = 'true'
+                property_node.attrib["xsi:nil"] = "true"
                 property_node.attrib["xmlns:xsi"] = Node.XSINS
                 property_node.text = ""
             elif len(str(properties[prop])) > 0:
@@ -703,18 +686,15 @@ class Node(object):
         # create accepts
         accepts = ElementTree.SubElement(node, Node.ACCEPTS)
 
-        ElementTree.SubElement(accepts, "view").attrib['uri'] = VO_VIEW_DEFAULT
+        ElementTree.SubElement(accepts, "view").attrib["uri"] = VO_VIEW_DEFAULT
 
         provides = ElementTree.SubElement(node, Node.PROVIDES)
-        ElementTree.SubElement(provides, "view").attrib[
-            'uri'] = VO_VIEW_DEFAULT
-        ElementTree.SubElement(provides, "view").attrib['uri'] = CADC_VO_VIEWS[
-            'rss']
+        ElementTree.SubElement(provides, "view").attrib["uri"] = VO_VIEW_DEFAULT
+        ElementTree.SubElement(provides, "view").attrib["uri"] = CADC_VO_VIEWS["rss"]
 
         # Only DataNode can have a dataview...
         if node_type == "vos:DataNode":
-            ElementTree.SubElement(provides, "view").attrib['uri'] = \
-                CADC_VO_VIEWS['data']
+            ElementTree.SubElement(provides, "view").attrib["uri"] = CADC_VO_VIEWS["data"]
 
         # if this is a container node then add directory contents
         if node_type == "vos:ContainerNode":
@@ -754,40 +734,41 @@ class Node(object):
 
     def get_info(self):
         """Organize some information about a node and return as dictionary"""
-        date = convert_vospace_time_to_seconds(self.props['date'])
-        creator_str = re.search('CN=([^,]*)',
-                                self.props.get('creator', 'CN=unknown_000,'))
+        date = convert_vospace_time_to_seconds(self.props["date"])
+        creator_str = re.search("CN=([^,]*)", self.props.get("creator", "CN=unknown_000,"))
         if creator_str is None:
-            creator = self.props.get('creator', 'CN=unknown_000,')
+            creator = self.props.get("creator", "CN=unknown_000,")
         else:
-            creator = (creator_str.groups()[0].replace(' ', '_')).lower()
+            creator = (creator_str.groups()[0].replace(" ", "_")).lower()
         perm = []
         for i in range(10):
-            perm.append('-')
-        perm[1] = 'r'
-        perm[2] = 'w'
+            perm.append("-")
+        perm[1] = "r"
+        perm[2] = "w"
         if self.type == "vos:ContainerNode":
-            perm[0] = 'd'
+            perm[0] = "d"
         if self.type == "vos:LinkNode":
-            perm[0] = 'l'
-        if self.props.get('ispublic', "false") == "true":
-            perm[-3] = 'r'
-            perm[-2] = '-'
-        write_group = self.props.get('groupwrite', 'NONE')
-        if write_group != 'NONE':
-            perm[5] = 'w'
-        read_group = self.props.get('groupread', 'NONE')
-        if read_group != 'NONE':
-            perm[4] = 'r'
+            perm[0] = "l"
+        if self.props.get("ispublic", "false") == "true":
+            perm[-3] = "r"
+            perm[-2] = "-"
+        write_group = self.props.get("groupwrite", "NONE")
+        if write_group != "NONE":
+            perm[5] = "w"
+        read_group = self.props.get("groupread", "NONE")
+        if read_group != "NONE":
+            perm[4] = "r"
         is_locked = self.props.get(VO_PROPERTY_URI_ISLOCKED, "false")
-        return {"permissions": ''.join(perm),
-                "creator": creator,
-                "readGroup": read_group,
-                "writeGroup": write_group,
-                "isLocked": is_locked,
-                "size": float(self.props.get('length', 0)),
-                "date": date,
-                "target": self.target}
+        return {
+            "permissions": "".join(perm),
+            "creator": creator,
+            "readGroup": read_group,
+            "writeGroup": write_group,
+            "isLocked": is_locked,
+            "size": float(self.props.get("length", 0)),
+            "date": date,
+            "target": self.target,
+        }
 
     @property
     def node_list(self):
@@ -804,7 +785,7 @@ class Node(object):
         return self._node_list
 
     def get_children(self, client, sort, order, limit=None):
-        """ Gets an iterator over the nodes held to by a ContainerNode"""
+        """Gets an iterator over the nodes held to by a ContainerNode"""
         # IF THE CALLER KNOWS THEY DON'T NEED THE CHILDREN THEY
         # CAN SET LIMIT=0 IN THE CALL Also, if the number of nodes
         # on the first call was less than 500, we likely got them
@@ -819,9 +800,8 @@ class Node(object):
 
         # stream children
         xml_file = StringIO(
-            client.open(self.uri, os.O_RDONLY,
-                        limit=limit, sort=sort,
-                        order=order).read().decode('UTF-8'))
+            client.open(self.uri, os.O_RDONLY, limit=limit, sort=sort, order=order).read().decode("UTF-8")
+        )
         xml_file.seek(0)
         page = Node(ElementTree.parse(xml_file).getroot())
         nl = page.node_list
@@ -834,9 +814,10 @@ class Node(object):
                 if len(nl) == limit:
                     # do another page read
                     xml_file = StringIO(
-                        client.open(self.uri, os.O_RDONLY, next_uri=nl[-1].uri,
-                                    sort=sort, order=order,
-                                    limit=limit).read().decode('UTF-8'))
+                        client.open(self.uri, os.O_RDONLY, next_uri=nl[-1].uri, sort=sort, order=order, limit=limit)
+                        .read()
+                        .decode("UTF-8")
+                    )
                     xml_file.seek(0)
                     page = Node(ElementTree.parse(xml_file).getroot())
                     nl = page.node_list
@@ -869,7 +850,7 @@ class Node(object):
         properties_node_list = self.node.findall(Node.PROPERTIES)
         for properties_node in properties_node_list:
             for property_node in properties_node.findall(Node.PROPERTY):
-                key = self.get_prop_name(property_node.get('uri'))
+                key = self.get_prop_name(property_node.get("uri"))
                 if key in self.props:
                     del self.props[key]
                 properties_node.remove(property_node)
@@ -896,8 +877,7 @@ class Node(object):
         :param props: the xmlx element to set the Node PROPERTY of.
         """
         for property_node in props.findall(Node.PROPERTY):
-            self.props[self.get_prop_name(
-                property_node.get('uri'))] = self.get_prop_value(property_node)
+            self.props[self.get_prop_name(property_node.get("uri"))] = self.get_prop_value(property_node)
         return
 
     @staticmethod
@@ -910,8 +890,7 @@ class Node(object):
 
         """
         parts = urlparse(prop)
-        if '{}://{}{}'.format(parts.scheme, parts.netloc, parts.path) == \
-                Node.IVOAURL:
+        if "{}://{}{}".format(parts.scheme, parts.netloc, parts.path) == Node.IVOAURL:
             return parts.fragment
         return prop
 
@@ -935,17 +914,14 @@ class VOFile(object):
     maxRetryTime - maximum time to retry for when transient errors are
                    encountered
     """
-    errnos = {404: errno.ENOENT,
-              401: errno.EACCES,
-              409: errno.EEXIST,
-              423: errno.EPERM,
-              408: errno.EAGAIN}
+
+    errnos = {404: errno.ENOENT, 401: errno.EACCES, 409: errno.EEXIST, 423: errno.EPERM, 408: errno.EAGAIN}
     # ## if we get one of these codes, retry the command... ;-(
     retryCodes = (503, 408, 504, 412)
 
-    def __init__(self, url_list, connector, method, size=None,
-                 follow_redirect=True, byte_range=None,
-                 possible_partial_read=False):
+    def __init__(
+        self, url_list, connector, method, size=None, follow_redirect=True, byte_range=None, possible_partial_read=False
+    ):
         self.closed = True
         if not isinstance(connector, Connection):
             raise AttributeError("BUG: Connection expected")
@@ -986,8 +962,7 @@ class VOFile(object):
         self.trans_encode = None
         # open the connection
         self._fobj = None
-        self.open(self.URLs[self.urlIndex], method, byte_range=byte_range,
-                  possible_partial_read=possible_partial_read)
+        self.open(self.URLs[self.urlIndex], method, byte_range=byte_range, possible_partial_read=possible_partial_read)
 
     def tell(self):
         return self._fpos
@@ -1015,7 +990,7 @@ class VOFile(object):
         if not self.closed:
             try:
                 if self.trans_encode is not None:
-                    self.httpCon.send('0\r\n\r\n')
+                    self.httpCon.send("0\r\n\r\n")
                     logger.debug("End of document sent.")
                 logger.debug("getting response.")
                 self.resp = self.connector.session.send(self.request)
@@ -1025,8 +1000,7 @@ class VOFile(object):
                 self.closed = True
         return self.closed
 
-    def checkstatus(self, codes=(200, 201, 202, 206, 302, 303, 503, 404, 416,
-                                 416, 402, 408, 412, 504)):
+    def checkstatus(self, codes=(200, 201, 202, 206, 302, 303, 503, 404, 416, 416, 402, 408, 412, 504)):
         """check the response status.  If the status code doesn't match a
         value from the codes list then
         raise an Exception.
@@ -1037,37 +1011,24 @@ class VOFile(object):
         if self.resp is None:
             return
 
-        msgs = {404: "Node Not Found",
-                401: "Not Authorized",
-                409: "Conflict",
-                423: "Locked",
-                408: "Connection Timeout"}
-        logger.debug(
-            'status {} for URL {}'.format(self.resp.status_code, self.url))
+        msgs = {404: "Node Not Found", 401: "Not Authorized", 409: "Conflict", 423: "Locked", 408: "Connection Timeout"}
+        logger.debug("status {} for URL {}".format(self.resp.status_code, self.url))
         if self.resp.status_code not in codes:
-            logger.debug("Got status code: %s for %s" %
-                         (self.resp.status_code, self.url))
+            logger.debug("Got status code: %s for %s" % (self.resp.status_code, self.url))
             msg = self.resp.text
             if msg is not None:
-                msg = html2text.html2text(msg, self.url).strip().replace('\n',
-                                                                         ' ')
+                msg = html2text.html2text(msg, self.url).strip().replace("\n", " ")
             logger.debug("Error message: {0}".format(msg))
 
-            if self.resp.status_code in VOFile.errnos.keys() or (
-                    msg is not None and "Node is busy" in msg):
-                if msg is None or len(
-                        msg) == 0 and self.resp.status_code in msgs:
+            if self.resp.status_code in VOFile.errnos.keys() or (msg is not None and "Node is busy" in msg):
+                if msg is None or len(msg) == 0 and self.resp.status_code in msgs:
                     msg = msgs[self.resp.status_code]
-                if (self.resp.status_code == 401 and
-                        self.connector.subject.anon and
-                        self.connector.vo_token is None):
+                if self.resp.status_code == 401 and self.connector.subject.anon and self.connector.vo_token is None:
                     msg += " using anonymous access "
-            exception = OSError(VOFile.errnos.get(self.resp.status_code,
-                                                  self.resp.status_code), msg)
+            exception = OSError(VOFile.errnos.get(self.resp.status_code, self.resp.status_code), msg)
             if self.resp.status_code == 500 and "read-only" in msg:
                 exception = OSError(errno.EPERM, "VOSpace in read-only mode.")
-            if self.resp.status_code == 400 and \
-                    "sorting options not supported" in msg:
+            if self.resp.status_code == 400 and "sorting options not supported" in msg:
                 exception = Exception("service does not support sorting")
             raise exception
 
@@ -1075,10 +1036,7 @@ class VOFile(object):
         # fallback to work around a server-side Java bug that limits
         # 'Content-Length' to a signed 32-bit integer (~2 gig files)
         try:
-            self.size = int(self.resp.headers.get("Content-Length",
-                                                  self.resp.headers.get(
-                                                      HEADER_CONTENT_LENGTH,
-                                                      0)))
+            self.size = int(self.resp.headers.get("Content-Length", self.resp.headers.get(HEADER_CONTENT_LENGTH, 0)))
         except ValueError:
             self.size = 0
 
@@ -1088,8 +1046,7 @@ class VOFile(object):
 
         return True
 
-    def open(self, url, method="GET", byte_range=None,
-             possible_partial_read=False):
+    def open(self, url, method="GET", byte_range=None, possible_partial_read=False):
         """Open a connection to the given URL
         :param url: The URL to be opened
         :type url: unicode
@@ -1102,7 +1059,7 @@ class VOFile(object):
         tells the server that isn't an error.
         :type possible_partial_read: bool
         """
-        logger.debug('Opening {} ({})'.format(url, method))
+        logger.debug("Opening {} ({})".format(url, method))
         self.url = url
         self.method = method
 
@@ -1115,8 +1072,7 @@ class VOFile(object):
         if method in ["PUT"]:
             try:
                 self.size = int(self.size)
-                request.headers.update({"Content-Length": str(self.size),
-                                        HEADER_CONTENT_LENGTH: str(self.size)})
+                request.headers.update({"Content-Length": str(self.size), HEADER_CONTENT_LENGTH: str(self.size)})
             except TypeError:
                 self.size = None
                 self.trans_encode = "chunked"
@@ -1128,16 +1084,15 @@ class VOFile(object):
             content_type = "text/xml"
             if method == "PUT":
                 ext = os.path.splitext(urlparse(url).path)[1]
-                if ext in ['.fz', '.fits', '.fit']:
-                    content_type = 'application/fits'
+                if ext in [".fz", ".fits", ".fit"]:
+                    content_type = "application/fits"
                 else:
                     content_type = mimetypes.guess_type(url)[0]
             if content_type is not None:
                 request.headers.update({"Content-Type": content_type})
         if byte_range is not None and method == "GET":
             request.headers.update({"Range": byte_range})
-        request.headers.update({"Accept": "*/*",
-                                "Expect": "100-continue"})
+        request.headers.update({"Accept": "*/*", "Expect": "100-continue"})
 
         # set header if a partial read is possible
         if possible_partial_read and method == "GET":
@@ -1166,18 +1121,15 @@ class VOFile(object):
             # this is original retry flag of the session
             orig_retry_flag = self.connector.session.retry
             try:
-                if (len(self.URLs) > 1) and\
-                   (self.urlIndex < len(self.URLs) - 1):
+                if (len(self.URLs) > 1) and (self.urlIndex < len(self.URLs) - 1):
                     # there is more urls to try so don't bother retrying on
                     # transient errors
                     # return instead and try the next url
                     self.connector.session.retry = False
-                self.resp = self.connector.session.send(self.request,
-                                                        stream=True)
+                self.resp = self.connector.session.send(self.request, stream=True)
             except exceptions.HttpException as http_exception:
-                if 'SSLV3_ALERT_CERTIFICATE_EXPIRED' in str(http_exception):
-                    raise RuntimeError(
-                        'Expired cert. Update by running cadc-get-cert')
+                if "SSLV3_ALERT_CERTIFICATE_EXPIRED" in str(http_exception):
+                    raise RuntimeError("Expired cert. Update by running cadc-get-cert")
                 # this is the path for all status_codes between 400 and 600
                 if http_exception.orig_exception is not None:
                     self.resp = http_exception.orig_exception.response
@@ -1187,12 +1139,11 @@ class VOFile(object):
 
                 self.checkstatus()
 
-                if isinstance(http_exception,
-                              exceptions.UnauthorizedException) or \
-                        isinstance(http_exception,
-                                   exceptions.BadRequestException) or \
-                        isinstance(http_exception,
-                                   exceptions.ForbiddenException):
+                if (
+                    isinstance(http_exception, exceptions.UnauthorizedException)
+                    or isinstance(http_exception, exceptions.BadRequestException)
+                    or isinstance(http_exception, exceptions.ForbiddenException)
+                ):
                     raise
 
                 # Note: 404 (File Not Found) might be returned when:
@@ -1220,10 +1171,7 @@ class VOFile(object):
         # fallback to work around a server-side Java bug that limits
         # 'Content-Length' to a signed 32-bit integer (~2 gig files)
         try:
-            self.size = int(self.resp.headers.get("Content-Length",
-                                                  self.resp.headers.get(
-                                                      HEADER_CONTENT_LENGTH,
-                                                      0)))
+            self.size = int(self.resp.headers.get("Content-Length", self.resp.headers.get(HEADER_CONTENT_LENGTH, 0)))
         except Exception:
             self.size = 0
 
@@ -1240,20 +1188,19 @@ class VOFile(object):
                 return self.resp
             else:
                 buff = self.resp.raw.read(size)
-                size = size is not None and size < len(buff) and size or len(
-                    buff)
+                size = size is not None and size < len(buff) and size or len(buff)
                 # logger.debug("Sending back {0} bytes".format(size))
                 return buff[:size]
         elif self.resp.status_code == 303 or self.resp.status_code == 302:
-            url = self.resp.headers.get('Location', None)
+            url = self.resp.headers.get("Location", None)
             logger.debug("Got redirect URL: {0}".format(url))
             self.url = url
             if not url:
                 raise OSError(
                     errno.ENOENT,
-                    "Got 303 on {0} but no Location value in header? [{1}]".
-                    format(self.url, self.resp.content),
-                    self.url)
+                    "Got 303 on {0} but no Location value in header? [{1}]".format(self.url, self.resp.content),
+                    self.url,
+                )
             if self.followRedirect:
                 # We open this new URL without the byte range and partial
                 # read as we are following a service redirect and that service
@@ -1268,8 +1215,7 @@ class VOFile(object):
 
         # start from top of URLs with a delay
         self.urlIndex = 0
-        logger.error("Servers busy {0} for {1}".format(self.resp.status_code,
-                                                       self.URLs))
+        logger.error("Servers busy {0} for {1}".format(self.resp.status_code, self.URLs))
         msg = self.resp.text
         if msg is not None:
             msg = html2text.html2text(msg, self.url).strip()
@@ -1286,8 +1232,7 @@ class VOFile(object):
             else:
                 self.currentRetryDelay = MAX_RETRY_DELAY
 
-        if ((self.retries < self.maxRetries) and
-                (self.totalRetryDelay < self.maxRetryTime)):
+        if (self.retries < self.maxRetries) and (self.totalRetryDelay < self.maxRetryTime):
             logger.error("Retrying in {0} seconds".format(ras))
             self.totalRetryDelay += ras
             self.retries += 1
@@ -1298,9 +1243,11 @@ class VOFile(object):
         else:
             raise OSError(
                 self.resp.status_code,
-                "failed to connect to server after multiple attempts {0} {1}".
-                format(self.resp.reason, self.resp.status_code),
-                self.url)
+                "failed to connect to server after multiple attempts {0} {1}".format(
+                    self.resp.reason, self.resp.status_code
+                ),
+                self.url,
+            )
 
     @staticmethod
     def write(buf):
@@ -1308,27 +1255,23 @@ class VOFile(object):
 
         :param buf: string to write to the file.
         """
-        raise OSError(
-            errno.ENOSYS,
-            "Direct write to a VOSpaceFile is not supported, use "
-            "copy instead.")
+        raise OSError(errno.ENOSYS, "Direct write to a VOSpaceFile is not supported, use copy instead.")
 
 
 class EndPoints(object):
-    VOSPACE_WEBSERVICE = os.getenv('VOSPACE_WEBSERVICE', os.getenv('LOCAL_VOSPACE_WEBSERVICE', None))
+    VOSPACE_WEBSERVICE = os.getenv("VOSPACE_WEBSERVICE", os.getenv("LOCAL_VOSPACE_WEBSERVICE", None))
 
     # standard ids
-    VO_NODES = 'ivo://ivoa.net/std/VOSpace/v2.0#nodes'
-    VO_FILES = 'ivo://ivoa.net/std/VOSpace#files-proto'
-    VO_TRANSFER = 'ivo://ivoa.net/std/VOSpace#sync-2.1'
-    VO_ASYNC_TRANSFER = 'ivo://ivoa.net/std/VOSpace/v2.0#transfers'
-    VO_RECURSIVE_DEL = 'ivo://ivoa.net/std/VOSpace#recursive-delete-proto'
-    VO_RECURSIVE_PROPS = 'ivo://ivoa.net/std/VOSpace#recursive-nodeprops-proto'
+    VO_NODES = "ivo://ivoa.net/std/VOSpace/v2.0#nodes"
+    VO_FILES = "ivo://ivoa.net/std/VOSpace#files-proto"
+    VO_TRANSFER = "ivo://ivoa.net/std/VOSpace#sync-2.1"
+    VO_ASYNC_TRANSFER = "ivo://ivoa.net/std/VOSpace/v2.0#transfers"
+    VO_RECURSIVE_DEL = "ivo://ivoa.net/std/VOSpace#recursive-delete-proto"
+    VO_RECURSIVE_PROPS = "ivo://ivoa.net/std/VOSpace#recursive-nodeprops-proto"
 
     subject = net.Subject()  # default subject is for anonymous access
 
-    def __init__(self, resource_id_uri, vospace_certfile=None,
-                 vospace_token=None, insecure=False):
+    def __init__(self, resource_id_uri, vospace_certfile=None, vospace_token=None, insecure=False):
         """
         Determines the end points of a vospace service
         :param resource_id_uri: the resource id uri
@@ -1342,10 +1285,12 @@ class EndPoints(object):
         :type insecure: bool
         """
         self.resource_id = resource_id_uri
-        self.conn = Connection(vospace_certfile=vospace_certfile,
-                               vospace_token=vospace_token,
-                               resource_id=self.resource_id,
-                               insecure=insecure)
+        self.conn = Connection(
+            vospace_certfile=vospace_certfile,
+            vospace_token=vospace_token,
+            resource_id=self.resource_id,
+            insecure=insecure,
+        )
 
     @property
     def uri(self):
@@ -1421,9 +1366,9 @@ class EndPoints(object):
         :param vospace_token: token string (alternative to vospace_certfile)
         :type vospace_token: unicode
         """
-        self.conn = Connection(vospace_certfile=vospace_certfile,
-                               vospace_token=vospace_token,
-                               resource_id=self.resource_id)
+        self.conn = Connection(
+            vospace_certfile=vospace_certfile, vospace_token=vospace_token, resource_id=self.resource_id
+        )
 
 
 nodeCache = NodeCache()
@@ -1432,31 +1377,48 @@ nodeCache = NodeCache()
 class Client(object):
     """The Client object does the work"""
 
-    VO_HTTPGET_PROTOCOL = 'ivo://ivoa.net/vospace/core#httpget'
-    VO_HTTPPUT_PROTOCOL = 'ivo://ivoa.net/vospace/core#httpput'
-    VO_HTTPSGET_PROTOCOL = 'ivo://ivoa.net/vospace/core#httpsget'
-    VO_HTTPSPUT_PROTOCOL = 'ivo://ivoa.net/vospace/core#httpsput'
-    DWS = '/data/pub/'
-    VO_TRANSFER_PROTOCOLS = ['https', 'http']
+    VO_HTTPGET_PROTOCOL = "ivo://ivoa.net/vospace/core#httpget"
+    VO_HTTPPUT_PROTOCOL = "ivo://ivoa.net/vospace/core#httpput"
+    VO_HTTPSGET_PROTOCOL = "ivo://ivoa.net/vospace/core#httpsget"
+    VO_HTTPSPUT_PROTOCOL = "ivo://ivoa.net/vospace/core#httpsput"
+    DWS = "/data/pub/"
+    VO_TRANSFER_PROTOCOLS = ["https", "http"]
 
     #  reserved vospace properties, not to be used for extended property
     #  setting
-    vosProperties = ["description", "type", "encoding", "MD5", "length",
-                     "creator", "date", "groupread", "groupwrite", "ispublic"]
+    vosProperties = [
+        "description",
+        "type",
+        "encoding",
+        "MD5",
+        "length",
+        "creator",
+        "date",
+        "groupread",
+        "groupwrite",
+        "ispublic",
+    ]
 
     VOSPACE_CERTFILE = os.getenv("VOSPACE_CERTFILE", None)
     if VOSPACE_CERTFILE is None:
-        for certfile in ['cadcproxy.pem', 'vospaceproxy.pem']:
-            certpath = os.path.join(os.getenv("HOME", "."), '.ssl')
+        for certfile in ["cadcproxy.pem", "vospaceproxy.pem"]:
+            certpath = os.path.join(os.getenv("HOME", "."), ".ssl")
             certfilepath = os.path.join(certpath, certfile)
             if os.access(certfilepath, os.R_OK):
                 VOSPACE_CERTFILE = certfilepath
             break
 
-    def __init__(self, vospace_certfile=None,
-                 root_node=None, conn=None,
-                 transfer_shortcut=None, http_debug=False,
-                 secure_get=True, vospace_token=None, insecure=False):
+    def __init__(
+        self,
+        vospace_certfile=None,
+        root_node=None,
+        conn=None,
+        transfer_shortcut=None,
+        http_debug=False,
+        secure_get=True,
+        vospace_token=None,
+        insecure=False,
+    ):
         """This could/should be expanded to set various defaults
         :param vospace_certfile: x509 proxy certificate file location. The
         certificate will be used with all the services that the Client
@@ -1485,19 +1447,18 @@ class Client(object):
 
         util.check_version(version=version)
 
-        if os.getenv('VOSPACE_WEBSERVICE', None):
-            msg = 'Using custom host: env.VOSPACE_WEBSERVICE={}'.\
-                  format(os.getenv('VOSPACE_WEBSERVICE', None))
+        if os.getenv("VOSPACE_WEBSERVICE", None):
+            msg = "Using custom host: env.VOSPACE_WEBSERVICE={}".format(os.getenv("VOSPACE_WEBSERVICE", None))
             logging.getLogger().warning(msg)
-        elif os.getenv('LOCAL_VOSPACE_WEBSERVICE', None):
-            msg = 'Using custom host: env.LOCAL_VOSPACE_WEBSERVICE={}'.\
-                  format(os.getenv('LOCAL_VOSPACE_WEBSERVICE', None))
+        elif os.getenv("LOCAL_VOSPACE_WEBSERVICE", None):
+            msg = "Using custom host: env.LOCAL_VOSPACE_WEBSERVICE={}".format(
+                os.getenv("LOCAL_VOSPACE_WEBSERVICE", None)
+            )
             logging.getLogger().warning(msg)
 
-        protocol = vos_config.get('transfer', 'protocol')
+        protocol = vos_config.get("transfer", "protocol")
         if protocol is not None:
-            warn_msg = "Protocol is no longer supported and should be " \
-                       "removed from the config file."
+            warn_msg = "Protocol is no longer supported and should be removed from the config file."
             warnings.warn(warn_msg, UserWarning)
 
         if conn is not None:
@@ -1509,8 +1470,7 @@ class Client(object):
         # self.nodeCache = NodeCache()
         self.secure_get = secure_get
         self._endpoints = {}
-        self.vospace_certfile = vospace_certfile is None and \
-            Client.VOSPACE_CERTFILE or vospace_certfile
+        self.vospace_certfile = vospace_certfile is None and Client.VOSPACE_CERTFILE or vospace_certfile
         self.vospace_token = vospace_token
         self.insecure = insecure
         self._fs_type = True  # True - file system type (cavern), False - db type (vault)
@@ -1586,18 +1546,17 @@ class Client(object):
         if not dirname:
             dirname = self.rootNode
         if isinstance(pattern, str) and not isinstance(dirname, str):
-            dirname = str(dirname).encode(
-                sys.getfilesystemencoding() or sys.getdefaultencoding())
+            dirname = str(dirname).encode(sys.getfilesystemencoding() or sys.getdefaultencoding())
         try:
             names = self.listdir(dirname, force=True)
         except os.error:
             return []
-        if not pattern.startswith('.'):
-            names = filter(lambda x: not x.startswith('.'), names)
+        if not pattern.startswith("."):
+            names = filter(lambda x: not x.startswith("."), names)
         return fnmatch.filter(names, pattern)
 
     def glob0(self, dirname, basename):
-        if basename == '':
+        if basename == "":
             # `os.path.split()` returns an empty basename for paths ending
             # with a directory separator.  'q*x/' should match only
             # directories.
@@ -1607,8 +1566,7 @@ class Client(object):
             if self.access(os.path.join(dirname, basename)):
                 return [basename]
             else:
-                raise OSError(errno.EACCES, "Permission denied: {0}".format(
-                    os.path.join(dirname, basename)))
+                raise OSError(errno.EACCES, "Permission denied: {0}".format(os.path.join(dirname, basename)))
         return []
 
     def set_auth(self, uri, vospace_certfile=None, vospace_token=None):
@@ -1622,11 +1580,10 @@ class Client(object):
         :param vospace_token: token string (alternative to vospace_certfile)
         :type vospace_token: unicode
         """
-        self.get_endpoints(uri).set_auth(vospace_certfile=vospace_certfile,
-                                         vospace_token=vospace_token)
+        self.get_endpoints(uri).set_auth(vospace_certfile=vospace_certfile, vospace_token=vospace_token)
 
     def is_remote_file(self, file_name):
-        if file_name.startswith(('http://', 'https://')):
+        if file_name.startswith(("http://", "https://")):
             # assume full uri
             return True
         file_scheme = urlparse(file_name).scheme
@@ -1635,8 +1592,8 @@ class Client(object):
                 self.get_endpoints(file_name)
                 return True
             except Exception as ex:
-                msg = 'No VOSpace service found for {}'.format(file_name)
-                logger.debug('{}, Reason: {}'.format(msg, ex))
+                msg = "No VOSpace service found for {}".format(file_name)
+                logger.debug("{}, Reason: {}".format(msg, ex))
                 raise ValueError(msg)
         return False
 
@@ -1653,54 +1610,58 @@ class Client(object):
         """
 
         uri_parts = urlparse(uri)
-        if uri.startswith('ivo://'):
+        if uri.startswith("ivo://"):
             raise AttributeError(
-                'BUG: VOSpace identifier expected (vos scheme), '
-                'received registry identifier {}'.format(uri))
-        if uri.startswith('vos://'):
-            resource_id = 'ivo://{}'.format(
-                uri_parts.hostname.replace('!', '/').replace('~', '/'))
+                "BUG: VOSpace identifier expected (vos scheme), received registry identifier {}".format(uri)
+            )
+        if uri.startswith("vos://"):
+            resource_id = "ivo://{}".format(uri_parts.hostname.replace("!", "/").replace("~", "/"))
         else:
             if uri_parts.scheme is not None:
                 # assume first that the file_scheme is the short name of the
                 # resource e.g. arc corresponds to ivo://cadc.nrc.ca/arc
                 # With a proper reg, this could be replaced by a TAP search
                 # into the registry
-                if uri_parts.scheme == 'vos':
+                if uri_parts.scheme == "vos":
                     # special shortcut
-                    scheme = 'vault'
+                    scheme = "vault"
                 else:
                     scheme = uri_parts.scheme
-                if (os.getenv('LOCAL_VOSPACE_WEBSERVICE')):
+                if os.getenv("LOCAL_VOSPACE_WEBSERVICE"):
                     # assume testing against local deployment
-                    resource_id = 'ivo://opencadc.org/{}'.format(scheme)
+                    resource_id = "ivo://opencadc.org/{}".format(scheme)
                 else:
-                    resource_id = 'ivo://cadc.nrc.ca/{}'.format(scheme)
+                    resource_id = "ivo://cadc.nrc.ca/{}".format(scheme)
 
             else:
-                raise OSError('No scheme in {}'.format(uri))
+                raise OSError("No scheme in {}".format(uri))
         # following is a CADC hack as others can deploy the services under different
         # resource IDs
-        if 'vault' in resource_id:
+        if "vault" in resource_id:
             self._fs_type = False
         if resource_id not in self._endpoints:
             try:
                 self._endpoints[resource_id] = EndPoints(
-                    resource_id, vospace_certfile=self.vospace_certfile,
-                    vospace_token=self.vospace_token, insecure=self.insecure)
+                    resource_id,
+                    vospace_certfile=self.vospace_certfile,
+                    vospace_token=self.vospace_token,
+                    insecure=self.insecure,
+                )
             except Exception:
                 # no services by that short name. Try a shortcut from
                 # config (only for backwards compatibility)
                 try:
                     resource_id = vos_config.get_resource_id(scheme)
                     self._endpoints[resource_id] = EndPoints(
-                        resource_id, vospace_certfile=self.vospace_certfile,
+                        resource_id,
+                        vospace_certfile=self.vospace_certfile,
                         vospace_token=self.vospace_token,
-                        insecure=self.insecure)
+                        insecure=self.insecure,
+                    )
                 except Exception:
                     raise AttributeError(
-                        'No service with resource ID {} found in registry or '
-                        'the config file'.format(resource_id))
+                        "No service with resource ID {} found in registry or the config file".format(resource_id)
+                    )
         return self._endpoints[resource_id]
 
     def get_session(self, uri):
@@ -1713,16 +1674,19 @@ class Client(object):
     def _get_si_client(self, uri):
         ep = self.get_endpoints(uri)
         if not self._si_client:
-            self._si_client = net.BaseDataClient(ep.resource_id, ep.subject,
-                                                 ep.conn.ws_client.agent, retry=True,
-                                                 host=ep.conn.ws_client.host,
-                                                 insecure=self.insecure,
-                                                 server_versions=SUPPORTED_SERVER_VERSIONS)
+            self._si_client = net.BaseDataClient(
+                ep.resource_id,
+                ep.subject,
+                ep.conn.ws_client.agent,
+                retry=True,
+                host=ep.conn.ws_client.host,
+                insecure=self.insecure,
+                server_versions=SUPPORTED_SERVER_VERSIONS,
+            )
         return self._si_client
 
     # @logExceptions()
-    def copy(self, source, destination, send_md5=False, disposition=False,
-             head=None):
+    def copy(self, source, destination, send_md5=False, disposition=False, head=None):
         """copy from source to destination.
 
         One of source or destination must be a vospace location and the other
@@ -1772,52 +1736,49 @@ class Client(object):
                 disposition = True
             get_urls = []
             cutout_match = FILENAME_PATTERN_MAGIC.search(source)
-            if cutout_match is not None and cutout_match.group('cutout'):
-                view = 'cutout'
-                if cutout_match.group('pix'):
-                    cutout = cutout_match.group('pix')
-                elif cutout_match.group('wcs') is not None:
-                    cutout = 'CIRCLE=' + '{} {} {}'.format(
-                        cutout_match.group('ra'),
-                        cutout_match.group('dec'),
-                        cutout_match.group('rad'))
+            if cutout_match is not None and cutout_match.group("cutout"):
+                view = "cutout"
+                if cutout_match.group("pix"):
+                    cutout = cutout_match.group("pix")
+                elif cutout_match.group("wcs") is not None:
+                    cutout = "CIRCLE=" + "{} {} {}".format(
+                        cutout_match.group("ra"), cutout_match.group("dec"), cutout_match.group("rad")
+                    )
                 else:
                     raise ValueError("Bad source name: {}".format(source))
-                source = cutout_match.group('filename')
+                source = cutout_match.group("filename")
             elif head:
-                view = 'header'
+                view = "header"
                 cutout = None
             else:
-                view = 'data'
+                view = "data"
                 cutout = None
 
-            if self._fs_type and (cutout or view == 'header'):
-                raise ValueError('cavern/arc service does not support cutouts or header operations')
+            if self._fs_type and (cutout or view == "header"):
+                raise ValueError("cavern/arc service does not support cutouts or header operations")
 
-            files_url = self.get_node_url(source, method='GET',
-                                          cutout=cutout,
-                                          view=view)
+            files_url = self.get_node_url(source, method="GET", cutout=cutout, view=view)
             if isinstance(files_url, list) and len(files_url) > 0:
                 files_url = files_url.pop(0)
             try:
                 transf_file = self._get_si_client(source).download_file(
-                    url=files_url, dest=destination,
-                    params=self._get_soda_params(view=view, cutout=cutout))
+                    url=files_url, dest=destination, params=self._get_soda_params(view=view, cutout=cutout)
+                )
                 success = True
             except Exception as e:
                 # not much to do but to fall through with full negotiation
-                logger.debug('GET fail on files endpoint for {}'.format(source), e)
+                logger.debug("GET fail on files endpoint for {}".format(source), e)
 
             if not success:
                 # at this point it's probably time to check whether the node is actually empty
                 src_node = self.get_node(source, force=True)
-                src_size = src_node.props.get('length', None)
+                src_size = src_node.props.get("length", None)
                 src_size = int(src_size)
                 if src_size == 0:
                     dest_file = destination
                     if os.path.isdir(dest_file):
                         dest_file = os.path.join(dest_file, os.path.basename(source))
-                    open(dest_file, 'wb').write(b'')  # empty file
+                    open(dest_file, "wb").write(b"")  # empty file
                     transf_file = dest_file, ZERO_MD5, 0
                     dest_size = 0
                     success = True
@@ -1825,9 +1786,9 @@ class Client(object):
             while not success:
                 if len(get_urls) == 0:
                     if not get_node_url_retried:
-                        get_urls = self.get_node_url(source, method='GET',
-                                                     cutout=cutout, view=view,
-                                                     full_negotiation=True)
+                        get_urls = self.get_node_url(
+                            source, method="GET", cutout=cutout, view=view, full_negotiation=True
+                        )
                         if len(get_urls) > 1:
                             # remove files_url that we've tried already
                             get_urls = [url for url in get_urls if url != files_url]
@@ -1838,22 +1799,20 @@ class Client(object):
 
                 try:
                     transf_file = self._get_si_client(source).download_file(
-                        url=get_url, dest=destination,
-                        params=self._get_soda_params(view=view, cutout=cutout))
+                        url=get_url, dest=destination, params=self._get_soda_params(view=view, cutout=cutout)
+                    )
                     success = True
                     break
                 except exceptions.HttpException as ex:
-                    msg = ''
+                    msg = ""
                     if isinstance(ex, exceptions.TransferException):
-                        msg = ' (intermittent error)'
-                        retried_urls[get_url] = \
-                            retried_urls.get(get_url, 0) + 1
+                        msg = " (intermittent error)"
+                        retried_urls[get_url] = retried_urls.get(get_url, 0) + 1
                         if retried_urls[get_url] < MAX_INTERMTTENT_RETRIES:
                             # intermittent error - worth retrying url later
                             get_urls.append(get_url)
                     copy_failed_message = str(ex)
-                    logging.debug("Failed to GET {0}: {1}{2}".format(
-                        get_url, str(ex), msg))
+                    logging.debug("Failed to GET {0}: {1}{2}".format(get_url, str(ex), msg))
                     continue
         else:
             # PUT
@@ -1864,8 +1823,8 @@ class Client(object):
             dest_node_md5 = None
             try:
                 destination_node = self.get_node(destination, force=True)
-                dest_node_md5 = destination_node.props.get('MD5', None)
-                dest_size = destination_node.props.get('length', None)
+                dest_node_md5 = destination_node.props.get("MD5", None)
+                dest_size = destination_node.props.get("length", None)
                 if dest_size:
                     dest_size = int(dest_size)
             except Exception:
@@ -1893,7 +1852,7 @@ class Client(object):
                     #   the bytes got corrupted on the way
                     src_md5 = md5_cache.MD5Cache.compute_md5(source)
                     if src_md5 == dest_node_md5:
-                        logger.info('Source and destination identical for {}. Skip transfer!'.format(source))
+                        logger.info("Source and destination identical for {}. Skip transfer!".format(source))
                         # post the node so that the modify time is updated
                         self.update(destination_node)
                         transf_file = os.path.basename(destination), dest_node_md5, dest_size
@@ -1902,32 +1861,25 @@ class Client(object):
                 # transfer the bytes with source md5 available
                 while not success:
                     if not get_node_url_retried:
-                        put_urls = self.get_node_url(
-                            destination, method='PUT',
-                            full_negotiation=True)
+                        put_urls = self.get_node_url(destination, method="PUT", full_negotiation=True)
                         get_node_url_retried = True
                     if len(put_urls) == 0:
                         break
                     put_url = put_urls.pop(0)
                     try:
                         transf_file = self._get_si_client(destination).upload_file(
-                            url=put_url,
-                            src=source,
-                            md5_checksum=src_md5)
+                            url=put_url, src=source, md5_checksum=src_md5
+                        )
                     except Exception as ex:
-                        msg = ''
+                        msg = ""
                         if isinstance(ex, exceptions.TransferException):
-                            msg = ' (intermittent error)'
-                            retried_urls[put_url] = retried_urls.get(
-                                put_url, 0) + 1
-                            if retried_urls[put_url] < \
-                                    MAX_INTERMTTENT_RETRIES:
+                            msg = " (intermittent error)"
+                            retried_urls[put_url] = retried_urls.get(put_url, 0) + 1
+                            if retried_urls[put_url] < MAX_INTERMTTENT_RETRIES:
                                 # intermittent error - worth retrying later
                                 put_urls.append(put_url)
                         copy_failed_message = str(ex)
-                        logger.debug(
-                            "FAILED to PUT to {0}: {1}{2}".format(
-                                put_url, str(ex), msg))
+                        logger.debug("FAILED to PUT to {0}: {1}{2}".format(put_url, str(ex), msg))
                         continue
                     success = True
                     break
@@ -1935,13 +1887,14 @@ class Client(object):
             if must_delete:
                 # cleanup
                 self.delete(destination)
-            raise OSError(errno.EFAULT,
-                          "Failed copying {0} -> {1}.\nReason for failure: {2}".
-                          format(source, destination, copy_failed_message))
+            raise OSError(
+                errno.EFAULT,
+                "Failed copying {0} -> {1}.\nReason for failure: {2}".format(source, destination, copy_failed_message),
+            )
         else:
-            logger.info('Transfer successful')
+            logger.info("Transfer successful")
         if transf_file is None:
-            raise RuntimeError('BUG: Not found details of successful transfer')
+            raise RuntimeError("BUG: Not found details of successful transfer")
         if disposition and transf_file:
             return transf_file[0]  # file name
         if send_md5 and transf_file:
@@ -1956,7 +1909,7 @@ class Client(object):
         possible.
 
         """
-        if '://' in uri:
+        if "://" in uri:
             # no much to do
             return uri
         parts = urlparse(uri)
@@ -1965,13 +1918,12 @@ class Client(object):
             if self.rootNode is not None:
                 uri = self.rootNode + uri
             else:
-                raise AttributeError(
-                    'Invalid URI to the remote resource: {}'.format(uri))
+                raise AttributeError("Invalid URI to the remote resource: {}".format(uri))
         parts = urlparse(uri)
 
         # Check that path name compiles with the standard
         logger.debug("Got value of query: {0}".format(parts.query))
-        linkuri = parse_qs(parts.query).get('link', None)
+        linkuri = parse_qs(parts.query).get("link", None)
         if linkuri:
             logger.debug("Got uri: {0}".format(linkuri[0]))
             if linkuri[0] is not None:
@@ -1980,27 +1932,24 @@ class Client(object):
 
         # Check for filename values.
         path = FILENAME_PATTERN_MAGIC.match(os.path.normpath(parts.path))
-        if path is None or path.group('filename') is None:
-            raise OSError(errno.EINVAL, "Illegal vospace container name",
-                          parts.path)
+        if path is None or path.group("filename") is None:
+            raise OSError(errno.EINVAL, "Illegal vospace container name", parts.path)
         logger.debug("Match : {}".format(path.groupdict()))
 
-        filename = path.group('filename')
+        filename = path.group("filename")
 
         # insert the default VOSpace server if none given
         host = parts.netloc
-        if not host or host == '':
+        if not host or host == "":
             # default host corresponds to the resource ID of the client
-            host = self.get_endpoints(uri).uri.\
-                replace('ivo://', '').replace('/', '!')
+            host = self.get_endpoints(uri).uri.replace("ivo://", "").replace("/", "!")
 
-        path = os.path.normpath(filename).strip('/')
+        path = os.path.normpath(filename).strip("/")
         # accessing root results in path='.' wich is not a valid root path.
         # Therefore, remove the '.' character in this case
-        if path == '.':
-            path = ''
-        uri = "vos://{0}/{1}{2}".format(
-            host, path, "?{}".format(parts.query) if parts.query else "")
+        if path == ".":
+            path = ""
+        uri = "vos://{0}/{1}{2}".format(host, path, "?{}".format(parts.query) if parts.query else "")
         logger.debug("Returning URI: {0}".format(uri))
         return uri
 
@@ -2031,31 +1980,27 @@ class Client(object):
                 # TODO removed ad. Not sure it was used
                 if self.is_remote_file(uri):
                     vo_fobj = self.open(uri, os.O_RDONLY, limit=limit)
-                    vo_xml_string = vo_fobj.read().decode('UTF-8')
+                    vo_xml_string = vo_fobj.read().decode("UTF-8")
                     xml_file = StringIO(vo_xml_string)
                     xml_file.seek(0)
                     dom = ElementTree.parse(xml_file)
                     node = Node(dom.getroot())
-                elif uri.startswith('http'):
-                    header = self.open(None, url=uri, mode=os.O_RDONLY,
-                                       head=True)
+                elif uri.startswith("http"):
+                    header = self.open(None, url=uri, mode=os.O_RDONLY, head=True)
                     header.read()
-                    logger.debug(
-                        "Got http headers: {0}".format(header.resp.headers))
+                    logger.debug("Got http headers: {0}".format(header.resp.headers))
                     properties = {
-                        'type': header.resp.headers.get('Content-Type', 'txt'),
-                        'date': time.strftime(
-                            '%Y-%m-%dT%H:%M:%S GMT',
-                            time.strptime(
-                                header.resp.headers.get('Date', None),
-                                '%a, %d %b %Y %H:%M:%S GMT')),
-                        'groupwrite': None,
-                        'groupread': None,
-                        'ispublic': urlparse(
-                            uri).scheme == 'https' and 'true' or 'false',
-                        'length': header.resp.headers.get('Content-Length', 0)}
-                    node = Node(node=uri, node_type=Node.DATA_NODE,
-                                properties=properties)
+                        "type": header.resp.headers.get("Content-Type", "txt"),
+                        "date": time.strftime(
+                            "%Y-%m-%dT%H:%M:%S GMT",
+                            time.strptime(header.resp.headers.get("Date", None), "%a, %d %b %Y %H:%M:%S GMT"),
+                        ),
+                        "groupwrite": None,
+                        "groupread": None,
+                        "ispublic": urlparse(uri).scheme == "https" and "true" or "false",
+                        "length": header.resp.headers.get("Content-Length", 0),
+                    }
+                    node = Node(node=uri, node_type=Node.DATA_NODE, properties=properties)
                     logger.debug(str(node))
                 else:
                     raise OSError(2, "Bad URI {0}".format(uri))
@@ -2069,12 +2014,11 @@ class Client(object):
                     while next_uri != node.node_list[-1].uri:
                         next_uri = node.node_list[-1].uri
                         xml_file = StringIO(
-                            self.open(uri, os.O_RDONLY, next_uri=next_uri,
-                                      limit=limit).read().decode('UTF-8'))
+                            self.open(uri, os.O_RDONLY, next_uri=next_uri, limit=limit).read().decode("UTF-8")
+                        )
                         xml_file.seek(0)
                         next_page = Node(ElementTree.parse(xml_file).getroot())
-                        if len(next_page.node_list) > 0 and next_uri == \
-                                next_page.node_list[0].uri:
+                        if len(next_page.node_list) > 0 and next_uri == next_page.node_list[0].uri:
                             next_page.node_list.pop(0)
                         node.node_list.extend(next_page.node_list)
         for childNode in node.node_list:
@@ -2082,10 +2026,20 @@ class Client(object):
                 childWatch.insert(childNode)
         return node
 
-    def get_node_url(self, uri, method='GET', view=None, limit=None,
-                     next_uri=None, cutout=None, sort=None, order=None,
-                     full_negotiation=None, content_length=None,
-                     md5_checksum=None):
+    def get_node_url(
+        self,
+        uri,
+        method="GET",
+        view=None,
+        limit=None,
+        next_uri=None,
+        cutout=None,
+        sort=None,
+        order=None,
+        full_negotiation=None,
+        content_length=None,
+        md5_checksum=None,
+    ):
         """Split apart the node string into parts and return the correct URL
         for this node.
 
@@ -2126,60 +2080,56 @@ class Client(object):
         uri = self.fix_uri(uri)
 
         if sort is not None and not isinstance(sort, SortNodeProperty):
-            raise TypeError('sort must be an instance of vos.NodeProperty Enum')
-        if order not in [None, 'asc', 'desc']:
+            raise TypeError("sort must be an instance of vos.NodeProperty Enum")
+        if order not in [None, "asc", "desc"]:
             raise ValueError('order must be either "asc" or "desc"')
 
         logger.debug("Getting URL for: " + str(uri))
 
         parts = urlparse(uri)
-        if parts.scheme.startswith('http'):
+        if parts.scheme.startswith("http"):
             return [uri]
 
         endpoints = self.get_endpoints(uri)
 
-        if not full_negotiation and method == 'GET' and view in ['data', 'cutout', 'header']:
+        if not full_negotiation and method == "GET" and view in ["data", "cutout", "header"]:
             return self._get(uri)
 
-        if not full_negotiation and method == 'PUT':
-            return self._put(uri, content_length=content_length,
-                             md5_checksum=md5_checksum)
+        if not full_negotiation and method == "PUT":
+            return self._put(uri, content_length=content_length, md5_checksum=md5_checksum)
 
-        if (view == "cutout" and cutout is None) or (
-                cutout is not None and view != "cutout"):
-            raise ValueError(
-                "For cutout, must specify a view=cutout and for view=cutout"
-                "must specify cutout")
+        if (view == "cutout" and cutout is None) or (cutout is not None and view != "cutout"):
+            raise ValueError("For cutout, must specify a view=cutout and for view=cutoutmust specify cutout")
 
-        if method == 'GET' and view not in ['data', 'cutout', 'header']:
+        if method == "GET" and view not in ["data", "cutout", "header"]:
             # This is a request for the URL of the Node, which returns an XML
             # document that describes the node.
             fields = {}
             if limit is not None:
-                fields['limit'] = limit
+                fields["limit"] = limit
             if sort is not None:
-                fields['sort'] = sort.value
+                fields["sort"] = sort.value
             if order is not None:
-                fields['order'] = order
+                fields["order"] = order
             if view is not None:
-                fields['view'] = view
+                fields["view"] = view
             if next_uri is not None:
-                fields['uri'] = next_uri
+                fields["uri"] = next_uri
 
-            tmp_url = '{}/{}'.format(endpoints.nodes, parts.path.strip('/'))
+            tmp_url = "{}/{}".format(endpoints.nodes, parts.path.strip("/"))
             # include the parameters into the url. Use Request to get it right
             req = requests.Request(method, tmp_url, params=fields)
             prepped = req.prepare()
             url = prepped.url
-            logger.debug('URL: {} ({})'.format(url, method))
+            logger.debug("URL: {} ({})".format(url, method))
             return url
 
         # This is the shortcut. We do a GET request on the service with the
         # parameters sent as arguments.
 
-        direction = {'GET': 'pullFromVoSpace', 'PUT': 'pushToVoSpace'}
+        direction = {"GET": "pullFromVoSpace", "PUT": "pushToVoSpace"}
         urls = self.transfer(self.get_endpoints(uri).transfer, uri, direction[method], None, None)
-        logger.debug('Transfer URLs: ' + ', '.join(urls))
+        logger.debug("Transfer URLs: " + ", ".join(urls))
         return urls
 
     def link(self, src_uri, link_uri):
@@ -2203,8 +2153,7 @@ class Client(object):
         # if self.isdir(link_uri):
         #     link_uri = os.path.join(link_uri, os.path.basename(src_uri))
 
-        with nodeCache.volatile(src_uri), nodeCache.volatile(
-                link_uri):
+        with nodeCache.volatile(src_uri), nodeCache.volatile(link_uri):
             link_node = Node(link_uri, node_type="vos:LinkNode")
             ElementTree.SubElement(link_node.node, "target").text = src_uri
         data = str(link_node)
@@ -2212,8 +2161,7 @@ class Client(object):
 
         url = self.get_node_url(link_uri)
         logger.debug("Got linkNode URL: {0}".format(url))
-        self.get_session(link_uri).put(
-            url, data=data, headers={'size': str(size)})
+        self.get_session(link_uri).put(url, data=data, headers={"size": str(size)})
 
     def move(self, src_uri, destination_uri):
         """Move src_uri to destination_uri.  If destination_uri is a
@@ -2228,16 +2176,15 @@ class Client(object):
         """
         src_uri = self.fix_uri(src_uri)
         destination_uri = self.fix_uri(destination_uri)
-        with nodeCache.volatile(src_uri), nodeCache.volatile(
-                destination_uri):
-            job_url = self.transfer(self.get_endpoints(src_uri).async_transfer,
-                                    src_uri, destination_uri, view='move')
+        with nodeCache.volatile(src_uri), nodeCache.volatile(destination_uri):
+            job_url = self.transfer(self.get_endpoints(src_uri).async_transfer, src_uri, destination_uri, view="move")
             # start the job
             self.get_session(src_uri).post(
-                job_url + '/phase',
+                job_url + "/phase",
                 allow_redirects=False,
-                data='PHASE=RUN',
-                headers={'Content-type': 'application/x-www-form-urlencoded'})
+                data="PHASE=RUN",
+                headers={"Content-type": "application/x-www-form-urlencoded"},
+            )
             return self.get_transfer_error(job_url, src_uri)
 
     def _get(self, uri):
@@ -2248,7 +2195,7 @@ class Client(object):
             file_path = urlparse(uri).path
             if not file_path:
                 return None
-            files_url = '{}{}'.format(files_ep, file_path)
+            files_url = "{}{}".format(files_ep, file_path)
             if self._fs_type:
                 # files_url contains the bytes
                 return files_url
@@ -2259,35 +2206,38 @@ class Client(object):
             except Exception:
                 return None
             if response.status_code == 303:
-                return response.headers.get('Location', None)
+                return response.headers.get("Location", None)
             return None
 
     def _get_soda_params(self, view=None, cutout=None):
         # returns HTTP header corresponding to the soda params
         result = {}
-        if view == 'header':
-            result['META'] = 'true'
+        if view == "header":
+            result["META"] = "true"
         elif cutout:
-            if cutout.strip().startswith('['):
+            if cutout.strip().startswith("["):
                 # pixel cutout
-                result['SUB'] = cutout
-            elif cutout.strip().startswith('CIRCLE'):
+                result["SUB"] = cutout
+            elif cutout.strip().startswith("CIRCLE"):
                 # circle cutout
-                result['CIRCLE'] = cutout.replace('CIRCLE=', '')
+                result["CIRCLE"] = cutout.replace("CIRCLE=", "")
             else:
                 # TODO add support for other SODA cutouts SUB, POL etc
-                raise ValueError('Unknown cutout type: ' + cutout)
+                raise ValueError("Unknown cutout type: " + cutout)
         return result
 
     def _put(self, uri, content_length=None, md5_checksum=None):
         with nodeCache.volatile(uri):
-            return self.transfer(self.get_endpoints(uri).transfer,
-                                 uri, "pushToVoSpace", view=None,
-                                 content_length=content_length,
-                                 md5_checksum=md5_checksum)
+            return self.transfer(
+                self.get_endpoints(uri).transfer,
+                uri,
+                "pushToVoSpace",
+                view=None,
+                content_length=content_length,
+                md5_checksum=md5_checksum,
+            )
 
-    def transfer(self, endpoint_url, uri, direction, view=None, cutout=None,
-                 content_length=None, md5_checksum=None):
+    def transfer(self, endpoint_url, uri, direction, view=None, cutout=None, content_length=None, md5_checksum=None):
         """Build the transfer XML document
         :param endpoint_url: the URL of the endpoint to POST to
         :param direction: is this a pushToVoSpace or a pullFromVoSpace ?
@@ -2308,19 +2258,16 @@ class Client(object):
         trans = net.Transfer(self.get_session(uri))
         security_methods = []
         if endpoints.conn.subject.certificate:
-            security_methods.append(
-                SSO_SECURITY_METHODS['tls-with-certificate'])
+            security_methods.append(SSO_SECURITY_METHODS["tls-with-certificate"])
         if endpoints.conn.subject.cookies:
-            security_methods.append(SSO_SECURITY_METHODS['cookie'])
+            security_methods.append(SSO_SECURITY_METHODS["cookie"])
         if endpoints.conn.vo_token:
-            security_methods.append(SSO_SECURITY_METHODS['token'])
+            security_methods.append(SSO_SECURITY_METHODS["token"])
 
-        result = trans.transfer(endpoint_url, uri, direction, view, cutout,
-                                security_methods=security_methods)
+        result = trans.transfer(endpoint_url, uri, direction, view, cutout, security_methods=security_methods)
         # if this is a connection to the 'rc' server then we reverse the
         # urllist to test the fail-over process
-        if urlparse(endpoints.nodes).netloc.startswith('rc') and \
-                isinstance(result, list):
+        if urlparse(endpoints.nodes).netloc.startswith("rc") and isinstance(result, list):
             result.reverse()
         return result
 
@@ -2337,10 +2284,23 @@ class Client(object):
         trans = net.Transfer(self.get_session(uri))
         return trans.get_transfer_error(url, uri)
 
-    def open(self, uri, mode=os.O_RDONLY, view=None, head=False, url=None,
-             limit=None, next_uri=None, size=None, cutout=None,
-             byte_range=None, sort=None, order=None,
-             full_negotiation=False, possible_partial_read=False):
+    def open(
+        self,
+        uri,
+        mode=os.O_RDONLY,
+        view=None,
+        head=False,
+        url=None,
+        limit=None,
+        next_uri=None,
+        size=None,
+        cutout=None,
+        byte_range=None,
+        sort=None,
+        order=None,
+        full_negotiation=False,
+        possible_partial_read=False,
+    ):
         """Create a VOFile connection to the specified uri or url.
 
         :rtype : VOFile
@@ -2405,37 +2365,36 @@ class Client(object):
         if not method:
             raise OSError(errno.EOPNOTSUPP, "Invalid access mode", mode)
 
-        if uri is not None and view in ['data', 'cutout']:
+        if uri is not None and view in ["data", "cutout"]:
             # Check if this is a target node.
             try:
                 node = self.get_node(uri)
                 if node.type == "vos:LinkNode":
                     target = node.node.findtext(Node.TARGET)
-                    logger.debug('{} is a link to {}'.format(node.uri, target))
+                    logger.debug("{} is a link to {}".format(node.uri, target))
                     if target is None:
                         raise OSError(errno.ENOENT, "No target for link")
                     else:
                         parts = urlparse(target)
-                        if parts.scheme == 'vos':
+                        if parts.scheme == "vos":
                             # This is a link to another VOSpace node so lets
                             # open that instead.
-                            return self.open(target, mode, view, head, url,
-                                             limit,
-                                             next_uri, size, cutout,
-                                             byte_range, sort, order)
+                            return self.open(
+                                target, mode, view, head, url, limit, next_uri, size, cutout, byte_range, sort, order
+                            )
                         else:
                             # A target external link
                             # TODO Need a way of passing along authentication.
                             if cutout is not None:
-                                target = "{0}?cutout={1}".format(target,
-                                                                 cutout)
+                                target = "{0}?cutout={1}".format(target, cutout)
                             return VOFile(
                                 [target],
                                 self.get_session(uri),
                                 method=method,
                                 size=size,
                                 byte_range=byte_range,
-                                possible_partial_read=possible_partial_read)
+                                possible_partial_read=possible_partial_read,
+                            )
             except OSError as ose:
                 if ose.errno in [2, 404]:
                     pass
@@ -2443,16 +2402,28 @@ class Client(object):
                     raise ose
 
         if url is None:
-            url = self.get_node_url(uri, method=method, view=view,
-                                    limit=limit, next_uri=next_uri,
-                                    cutout=cutout, sort=sort, order=order,
-                                    full_negotiation=full_negotiation)
+            url = self.get_node_url(
+                uri,
+                method=method,
+                view=view,
+                limit=limit,
+                next_uri=next_uri,
+                cutout=cutout,
+                sort=sort,
+                order=order,
+                full_negotiation=full_negotiation,
+            )
             if url is None:
                 raise OSError(errno.EREMOTE)
 
-        return VOFile(url, self.get_endpoints(uri).conn, method=method,
-                      size=size, byte_range=byte_range,
-                      possible_partial_read=possible_partial_read)
+        return VOFile(
+            url,
+            self.get_endpoints(uri).conn,
+            method=method,
+            size=size,
+            byte_range=byte_range,
+            possible_partial_read=possible_partial_read,
+        )
 
     def add_props(self, node, recursive=False):
         """Given a node structure do a POST of the XML to the VOSpace to
@@ -2467,32 +2438,31 @@ class Client(object):
            :raises When a network problem occurs, it raises one of the
            HttpException exceptions declared in the
         cadcutils.exceptions module
-           """
+        """
         new_props = copy.deepcopy(node.props)
         old_props = self.get_node(node.uri, force=True).props
         for prop in old_props:
-            if prop in new_props and old_props[prop] == new_props[prop] and \
-                            old_props[prop] is not None:
-                del (new_props[prop])
-        node.node = node.create(node.uri, node_type=node.type,
-                                properties=new_props)
+            if prop in new_props and old_props[prop] == new_props[prop] and old_props[prop] is not None:
+                del new_props[prop]
+        node.node = node.create(node.uri, node_type=node.type, properties=new_props)
         # Now write these new properties to the node location.
-        url = self.get_node_url(node.uri, method='GET')
+        url = self.get_node_url(node.uri, method="GET")
         data = str(node)
         size = len(data)
         session = self.get_session(node.uri)
         if recursive:
-            response = session.post(self.get_endpoints(node.uri).recursive_props,
-                                    data=str(node), allow_redirects=False,
-                                    headers={'Content-type': 'text/xml'})
+            response = session.post(
+                self.get_endpoints(node.uri).recursive_props,
+                data=str(node),
+                allow_redirects=False,
+                headers={"Content-type": "text/xml"},
+            )
             response.raise_for_status()
             if response.status_code != 303:
-                raise RuntimeError('Unexpected response for running job: '
-                                   + response.status_code)
-            return self._run_recursive_job(session,
-                                           response.headers['location'])
+                raise RuntimeError("Unexpected response for running job: " + response.status_code)
+            return self._run_recursive_job(session, response.headers["location"])
         else:
-            session.post(url, headers={'size': str(size)}, data=data)
+            session.post(url, headers={"size": str(size)}, data=data)
             return 1, 0
 
     def create(self, uri):
@@ -2509,27 +2479,27 @@ class Client(object):
         fixed_uri = self.fix_uri(uri)
         node = Node(fixed_uri)
         path = urlparse(fixed_uri).path
-        url = '{}{}'.format(self.get_endpoints(fixed_uri).nodes, path)
+        url = "{}{}".format(self.get_endpoints(fixed_uri).nodes, path)
         data = str(node)
         size = len(data)
-        return Node(self.get_session(uri).put(
-            url, data=data,
-            headers={'size': str(size), 'Content-Type': 'text/xml'}).content)
+        return Node(
+            self.get_session(uri).put(url, data=data, headers={"size": str(size), "Content-Type": "text/xml"}).content
+        )
 
     def update(self, node, recursive=False):
         """Updates the node properties on the server. For non-recursive
-           updates, node's properties are updated on the server. For
-           recursive updates, node should only contain the properties to
-           be changed in the node itself as well as all its children.
+        updates, node's properties are updated on the server. For
+        recursive updates, node should only contain the properties to
+        be changed in the node itself as well as all its children.
 
-           :param node: the node to update.
-           :param recursive: should this update be applied to all children?
-           (True/False)
+        :param node: the node to update.
+        :param recursive: should this update be applied to all children?
+        (True/False)
 
-            :raises When a network problem occurs, it raises one of the
-            HttpException exceptions declared in the
-            cadcutils.exceptions module
-           """
+         :raises When a network problem occurs, it raises one of the
+         HttpException exceptions declared in the
+         cadcutils.exceptions module
+        """
         # Let's do this update using the async transfer method
         url = self.get_node_url(node.uri)
         endpoints = self.get_endpoints(node.uri)
@@ -2538,21 +2508,18 @@ class Client(object):
             try:
                 property_url = endpoints.recursive_props
             except KeyError as ex:
-                logger.debug('recursive props endpoint does not exist: {0}'.
-                             format(str(ex)))
-                raise Exception('Operation not supported')
+                logger.debug("recursive props endpoint does not exist: {0}".format(str(ex)))
+                raise Exception("Operation not supported")
             logger.debug("prop URL: {0}".format(property_url))
             # quickly check target exists
             session.get(endpoints.nodes + urlparse(node.uri).path)
-            response = session.post(endpoints.recursive_props,
-                                    data=str(node), allow_redirects=False,
-                                    headers={'Content-type': 'text/xml'})
+            response = session.post(
+                endpoints.recursive_props, data=str(node), allow_redirects=False, headers={"Content-type": "text/xml"}
+            )
             response.raise_for_status()
             if response.status_code != 303:
-                raise RuntimeError('Unexpected response for running job: '
-                                   + response.status_code)
-            return self._run_recursive_job(session,
-                                           response.headers['location'])
+                raise RuntimeError("Unexpected response for running job: " + response.status_code)
+            return self._run_recursive_job(session, response.headers["location"])
         else:
             resp = session.post(url, data=str(node), allow_redirects=False)
             logger.debug("update response: {0}".format(resp.content))
@@ -2577,15 +2544,13 @@ class Client(object):
         if isinstance(url, list) and len(url) > 0:
             url = url.pop(0)
         try:
-            response = self.get_session(uri).put(
-                url, data=str(node), headers={'Content-Type': 'text/xml'})
+            response = self.get_session(uri).put(url, data=str(node), headers={"Content-Type": "text/xml"})
             response.raise_for_status()
         except HTTPError as http_error:
             if http_error.response.status_code != 409:
                 raise http_error
             else:
-                raise OSError(errno.EEXIST,
-                              'ContainerNode {0} already exists'.format(uri))
+                raise OSError(errno.EEXIST, "ContainerNode {0} already exists".format(uri))
 
     def delete(self, uri):
         """Delete the node
@@ -2598,7 +2563,7 @@ class Client(object):
         uri = self.fix_uri(uri)
         logger.debug("delete {0}".format(uri))
         with nodeCache.volatile(uri):
-            url = self.get_node_url(uri, method='GET')
+            url = self.get_node_url(uri, method="GET")
             if isinstance(url, list) and len(url) > 0:
                 url = url.pop(0)
             response = self.get_session(uri).delete(url)
@@ -2619,25 +2584,23 @@ class Client(object):
             session = self.get_session(uri)
             # quickly check target exists
             self.get_node(uri)
-            response = session.post(self.get_endpoints(uri).recursive_del, {'target': uri}, allow_redirects=False)
+            response = session.post(self.get_endpoints(uri).recursive_del, {"target": uri}, allow_redirects=False)
             response.raise_for_status()
             if response.status_code != 303:
-                raise RuntimeError('Unexpected response for running job: '
-                                   + response.status_code)
-            return self._run_recursive_job(session, response.headers['location'])
+                raise RuntimeError("Unexpected response for running job: " + response.status_code)
+            return self._run_recursive_job(session, response.headers["location"])
 
     def _run_recursive_job(self, session, url):
         # runs an already created recursive job and returns the number of
         # successfull and unsuccessfull actions
-        logger.debug('POST: ' + url)
-        response = session.post(url + '/phase', data={'phase': 'RUN'}, allow_redirects=False)
+        logger.debug("POST: " + url)
+        response = session.post(url + "/phase", data={"phase": "RUN"}, allow_redirects=False)
         if response.status_code != 303:
-            raise RuntimeError('Unexpected response for running job: '
-                               + response.status_code)
+            raise RuntimeError("Unexpected response for running job: " + response.status_code)
 
         # polling: WAIT will block for up to 6 sec or until phase change or if job is in
         # a terminal phase
-        jobPoll = url + '?WAIT=6'
+        jobPoll = url + "?WAIT=6"
         count = 0
         done = False
         while not done and count < 100:  # max 100*6 = 600 sec polling
@@ -2645,36 +2608,35 @@ class Client(object):
             resp = session.get(jobPoll)
             resp.raise_for_status()
             xml_string = resp.content
-            logging.debug('Job Document:{}'.format(xml_string))
+            logging.debug("Job Document:{}".format(xml_string))
             job_document = ElementTree.fromstring(xml_string)
-            if job_document.find('uws:phase', UWS_NSMAP) is not None:
-                phase = job_document.find('uws:phase', UWS_NSMAP).text
+            if job_document.find("uws:phase", UWS_NSMAP) is not None:
+                phase = job_document.find("uws:phase", UWS_NSMAP).text
             else:
-                raise RuntimeError('Cannot determine job phase')
-            if phase.upper() in ['QUEUED', 'EXECUTING', 'SUSPENDED']:
+                raise RuntimeError("Cannot determine job phase")
+            if phase.upper() in ["QUEUED", "EXECUTING", "SUSPENDED"]:
                 count += 1
-            elif phase.upper() == 'ERROR':
-                message = 'Failed'
-                error_summary = job_document.find('uws:errorSummary', UWS_NSMAP)
-                if (error_summary is not None and
-                        error_summary.find('uws:message', UWS_NSMAP) is not None):
-                    message = error_summary.find('uws:message', UWS_NSMAP).text
+            elif phase.upper() == "ERROR":
+                message = "Failed"
+                error_summary = job_document.find("uws:errorSummary", UWS_NSMAP)
+                if error_summary is not None and error_summary.find("uws:message", UWS_NSMAP) is not None:
+                    message = error_summary.find("uws:message", UWS_NSMAP).text
                 raise RuntimeError(message)
-            elif phase.upper() in ['COMPLETED', 'ABORTED']:
-                results = job_document.find('uws:results', UWS_NSMAP)
+            elif phase.upper() in ["COMPLETED", "ABORTED"]:
+                results = job_document.find("uws:results", UWS_NSMAP)
                 error_count = 0
                 success_count = 0
                 if results is not None:
-                    results = results.findall('uws:result', UWS_NSMAP)
+                    results = results.findall("uws:result", UWS_NSMAP)
                     if results is not None:
                         for res in results:
-                            if res.attrib['id'] == 'successcount':
-                                success_count = res.attrib['{' + UWS_NSMAP['xlink'] + '}href'].split(':')[1]
-                            elif res.attrib['id'] == 'errorcount':
-                                error_count = res.attrib['{' + UWS_NSMAP['xlink'] + '}href'].split(':')[1]
+                            if res.attrib["id"] == "successcount":
+                                success_count = res.attrib["{" + UWS_NSMAP["xlink"] + "}href"].split(":")[1]
+                            elif res.attrib["id"] == "errorcount":
+                                error_count = res.attrib["{" + UWS_NSMAP["xlink"] + "}href"].split(":")[1]
                 return success_count, error_count
             else:
-                raise RuntimeError('Unknown job phase: ' + phase)
+                raise RuntimeError("Unknown job phase: " + phase)
 
     def get_children_info(self, uri, sort=None, order=None, force=False):
         """Returns an iterator over tuples of (NodeName, Info dict)
@@ -2756,7 +2718,7 @@ class Client(object):
             uri = node.target
             if self.is_remote_file(uri):
                 if uri.startswith("http"):
-                    return 'vos:DataNode'
+                    return "vos:DataNode"
                 node = self.get_node(uri, limit=0)
             else:
                 return "vos:DataNode"
@@ -2769,8 +2731,8 @@ class Client(object):
             if self.is_remote_file(uri):
                 node = self.get_node(uri, limit=0)
             else:
-                return int(requests.head(uri).headers.get('Content-Length', 0))
-        return node.get_info()['size']
+                return int(requests.head(uri).headers.get("Content-Length", 0))
+        return node.get_info()["size"]
 
     def isdir(self, uri):
         """
@@ -2808,10 +2770,12 @@ class Client(object):
         if mode == os.O_RDONLY:
             try:
                 self.get_node(uri, limit=0, force=True)
-            except (exceptions.NotFoundException,
-                    exceptions.AlreadyExistsException,
-                    exceptions.UnauthorizedException,
-                    exceptions.ForbiddenException):
+            except (
+                exceptions.NotFoundException,
+                exceptions.AlreadyExistsException,
+                exceptions.UnauthorizedException,
+                exceptions.ForbiddenException,
+            ):
                 return False
 
         return isinstance(self.open(uri, mode=mode), VOFile)
@@ -2826,8 +2790,7 @@ class Client(object):
         :param code: NOT SUPPORTED.
         """
         if code:
-            raise OSError(errno.ENOSYS,
-                          "Use of 'code' option values no longer supported.")
+            raise OSError(errno.ENOSYS, "Use of 'code' option values no longer supported.")
         self.get_node(uri)
         return True
 
@@ -2867,12 +2830,11 @@ class Md5File(object):
         if not self.file.closed:
             self.file.close()
         # clean up
-        exit = getattr(self.file, '__exit__', None)
+        exit = getattr(self.file, "__exit__", None)
         if exit is not None:
             return exit(*args, **kwargs)
         else:
-            exit = getattr(self.file, 'close',
-                           None)
+            exit = getattr(self.file, "close", None)
             if exit is not None:
                 exit()
 
