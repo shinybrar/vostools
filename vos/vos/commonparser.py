@@ -136,8 +136,7 @@ def set_logging_level_from_args(args):
         logger = logging.getLogger('vos')
         logger.setLevel(logging.DEBUG)
 
-    if sys.version_info[1] > 6:
-        logging.getLogger().addHandler(logging.NullHandler())
+    logging.getLogger().addHandler(logging.NullHandler())
 
 
 class CommonParser(argparse.ArgumentParser):

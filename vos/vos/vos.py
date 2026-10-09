@@ -75,15 +75,12 @@
 import warnings
 import copy
 import errno
-from datetime import datetime
+from datetime import datetime, timezone
 import fnmatch
 from enum import Enum
 import hashlib
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 import requests
 from requests.exceptions import HTTPError
 import html2text
@@ -94,7 +91,6 @@ import re
 import stat
 import sys
 import time
-import urllib
 from xml.etree import ElementTree
 from copy import deepcopy
 from .node_cache import NodeCache
@@ -110,8 +106,7 @@ from . import md5_cache
 from urllib.parse import urlparse, parse_qs
 logger = logging.getLogger('vos')
 
-if sys.version_info[1] > 6:
-    logger.addHandler(logging.NullHandler())
+logger.addHandler(logging.NullHandler())
 
 # ch = logging.StreamHandler()
 # ch.setLevel(logging.DEBUG)
@@ -200,7 +195,8 @@ def convert_vospace_time_to_seconds(str_date):
     """
     right = str_date.rfind(":") + 3
     mtime = time.mktime(time.strptime(str_date[0:right], '%Y-%m-%dT%H:%M:%S'))
-    return mtime - round((datetime.utcnow() - datetime.now()).total_seconds())
+    utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
+    return mtime - round((utc_now - datetime.now()).total_seconds())
 
 
 class Connection(object):
@@ -1131,8 +1127,8 @@ class VOFile(object):
         if method in ["PUT", "POST", "DELETE"]:
             content_type = "text/xml"
             if method == "PUT":
-                ext = os.path.splitext(urllib.splitquery(url)[0])[1]
-                if ext in ['.fz', '.fits', 'fit']:
+                ext = os.path.splitext(urlparse(url).path)[1]
+                if ext in ['.fz', '.fits', '.fit']:
                     content_type = 'application/fits'
                 else:
                     content_type = mimetypes.guess_type(url)[0]
