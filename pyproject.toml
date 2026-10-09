@@ -9,6 +9,8 @@ package = false
 
 [tool.uv.workspace]
 members = ["libs/*"]
+# Imported from shinybrar/vosfs; held out of the workspace, ty and pre-commit until they are joined.
+exclude = ["libs/vosfs", "libs/fss-cli"]
 
 [dependency-groups]
 dev = [
@@ -53,6 +55,7 @@ docstring-code-format = true
 
 [tool.ty.src]
 include = ["libs/*/src"]
+exclude = ["libs/vosfs", "libs/fss-cli"]
 
 # vos type checking ratchet: these rules report as warnings in vos until its findings are
 # fixed; every other rule is an error. Remove a rule from the list once vos is clean for it.

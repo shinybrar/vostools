@@ -1,4 +1,6 @@
 default_install_hook_types: [pre-commit, commit-msg]
+# Imported packages are checked by their own configuration once they join the workspace.
+exclude: ^libs/(vosfs|fss-cli)/
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
