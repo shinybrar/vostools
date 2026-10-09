@@ -233,9 +233,7 @@ def test_size_rejects_incompatible_batch_results_atomically(
         sources={"memory": source},
     )
 
-    expected_operand = (
-        "memory:/b" if batch_result in ([1, True], [1, -1], [1, 2.0]) else "memory:/a"
-    )
+    expected_operand = "memory:/b" if batch_result in ([1, True], [1, -1], [1, 2.0]) else "memory:/a"
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",

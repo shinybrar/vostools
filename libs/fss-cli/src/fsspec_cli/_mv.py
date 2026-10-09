@@ -53,9 +53,7 @@ def _plan_mv(
     )
 
 
-async def _confirmed_mv_file(
-    request: _CpRequest, filesystem: AsyncFileSystem
-) -> _CpFailure | None:
+async def _confirmed_mv_file(request: _CpRequest, filesystem: AsyncFileSystem) -> _CpFailure | None:
     started = time.monotonic()
     prepared = await _prepare_transfer(request, filesystem, filesystem)
     if isinstance(prepared, _CpFailure):

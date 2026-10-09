@@ -12,8 +12,9 @@ from typing import TYPE_CHECKING
 import pytest
 import typer
 from fsspec.asyn import AsyncFileSystem
-from fsspec_cli import App
 from typer.main import get_command
+
+from fsspec_cli import App
 
 from ._ansi import strip_ansi
 from ._support import _invoke
@@ -155,16 +156,7 @@ _TREE_LEVELS: list[list[str]] = [
     ["/docs/a-dir/nested"],
 ]
 
-_TREE_OUTPUT = (
-    "/docs\n"
-    "├── a-dir\n"
-    "│   ├── nested\n"
-    "│   │   └── c.txt\n"
-    "│   └── b.txt\n"
-    "├── z-dir\n"
-    "├── a.txt\n"
-    "└── z.txt\n"
-)
+_TREE_OUTPUT = "/docs\n├── a-dir\n│   ├── nested\n│   │   └── c.txt\n│   └── b.txt\n├── z-dir\n├── a.txt\n└── z.txt\n"
 
 
 def _listed(levels: Sequence[Sequence[str]]) -> list[tuple[str, bool, dict]]:
@@ -185,9 +177,7 @@ def test_tree_lists_each_directory_once_breadth_first_and_renders_exactly() -> N
     assert source.ls_calls == _listed(_TREE_LEVELS)
 
 
-def test_tree_lists_sibling_directories_concurrently_with_deterministic_output() -> (
-    None
-):
+def test_tree_lists_sibling_directories_concurrently_with_deterministic_output() -> None:
     siblings = {"/docs/z-dir", "/docs/a-dir"}
     both_started = asyncio.Event()
     in_flight: set[str] = set()
@@ -330,8 +320,7 @@ def test_tree_drains_in_flight_sibling_listings_before_source_exit_on_cancellati
         (
             ["--maxdepth", "2", "memory:/docs"],
             2,
-            "/docs\n├── a-dir\n│   ├── nested\n│   └── b.txt\n"
-            "├── z-dir\n├── a.txt\n└── z.txt\n",
+            "/docs\n├── a-dir\n│   ├── nested\n│   └── b.txt\n├── z-dir\n├── a.txt\n└── z.txt\n",
         ),
         (
             ["--maxdepth", "3", "memory:/docs", "--maxdepth", "1"],
@@ -439,9 +428,7 @@ def test_tree_renders_a_valid_chain_deeper_than_the_python_recursion_limit() -> 
         path = f"{path}/{name}"
     rows.append((path, [], ["leaf"]))
     source = _TreeSource(listings=_listings(rows))
-    expected = "/root\n" + "".join(
-        f"{'    ' * index}└── d{index}\n" for index in range(depth)
-    )
+    expected = "/root\n" + "".join(f"{'    ' * index}└── d{index}\n" for index in range(depth))
     expected += f"{'    ' * depth}└── leaf\n"
 
     result = _invoke("tree", ["memory:/root"], sources={"memory": source})

@@ -6,8 +6,9 @@ from typing import NoReturn
 
 import pytest
 import typer
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 from ._support import _invoke, _RecordingSource, _source_must_not_run
 
@@ -154,9 +155,7 @@ def test_ls_renders_source_names_and_empty_exception_messages() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: broken\\\\source\\x0d: source factory failure (RuntimeError): \n"
-    )
+    assert result.stderr == ("ls: broken\\\\source\\x0d: source factory failure (RuntimeError): \n")
 
 
 def test_ls_reports_acquisition_before_cleanup_failures() -> None:
@@ -176,8 +175,7 @@ def test_ls_reports_acquisition_before_cleanup_failures() -> None:
     assert result.exit_code == 1
     assert result.stdout == ""
     assert result.stderr == (
-        "ls: broken: source factory failure (ValueError): acquire\n"
-        "ls: first: source exit failure (OSError): cleanup\n"
+        "ls: broken: source factory failure (ValueError): acquire\nls: first: source exit failure (OSError): cleanup\n"
     )
     assert len(first.exit_calls) == 1
 
@@ -191,8 +189,7 @@ def test_ls_retains_a_command_diagnostic_when_cleanup_fails() -> None:
     assert result.exit_code == 1
     assert result.stdout == ""
     assert result.stderr == (
-        "ls: memory:/file: incompatible result\n"
-        "ls: memory: source exit failure (OSError): cleanup\n"
+        "ls: memory:/file: incompatible result\nls: memory: source exit failure (OSError): cleanup\n"
     )
 
 
@@ -359,9 +356,7 @@ def test_ls_preserves_primary_control_flow_across_cleanup_failures() -> None:
     assert result.exception is primary
     assert result.exit_code == 7
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: alpha: source exit failure (RuntimeError): alpha exit\n"
-    )
+    assert result.stderr == ("ls: alpha: source exit failure (RuntimeError): alpha exit\n")
     assert len(alpha.exit_calls) == 1
     assert len(beta.exit_calls) == 1
 

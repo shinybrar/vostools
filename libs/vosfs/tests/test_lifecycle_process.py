@@ -36,9 +36,7 @@ class _CountingTransport(httpx.AsyncBaseTransport):
 
 async def _direct_send(filesystem: VOSpaceFileSystem, kind: str) -> None:
     if kind == "service":
-        await filesystem._send_to_service(
-            "GET", f"{filesystem.endpoint_url}/capabilities"
-        )
+        await filesystem._send_to_service("GET", f"{filesystem.endpoint_url}/capabilities")
         return
     await _transfer.byte_send(
         filesystem,
@@ -103,9 +101,7 @@ async def test_concurrent_close_is_idempotent_and_blocks_cached_io(
 async def test_pickle_and_json_reconstruct_only_constructor_state(
     router: respx.Router,
 ) -> None:
-    router.get("/capabilities").mock(
-        return_value=httpx.Response(200, content=CAPABILITIES)
-    )
+    router.get("/capabilities").mock(return_value=httpx.Response(200, content=CAPABILITIES))
     filesystem = VOSpaceFileSystem(
         BASE_URL,
         transport=httpx.MockTransport(router.async_handler),
@@ -117,12 +113,7 @@ async def test_pickle_and_json_reconstruct_only_constructor_state(
     filesystem._authority = "example.test!vault"
     filesystem.dircache["/"] = []
     assert tokenize(filesystem) == constructor_token
-    assert (
-        VOSpaceFileSystem(
-            BASE_URL, asynchronous=True, token="serialization-review-literal"
-        )
-        is filesystem
-    )
+    assert VOSpaceFileSystem(BASE_URL, asynchronous=True, token="serialization-review-literal") is filesystem
 
     pickled = pickle.loads(pickle.dumps(filesystem))  # noqa: S301 - trusted round-trip
     restored_json = VOSpaceFileSystem.from_json(filesystem.to_json())

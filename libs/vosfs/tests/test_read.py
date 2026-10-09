@@ -18,9 +18,7 @@ def test_signed_byte_url_is_redacted_in_connection_errors(router: respx.Router) 
     endpoint = f"{BASE_URL}/files/preauth:SYNTHETIC_TOKEN/f"
     router.get(endpoint).mock(side_effect=httpx.ConnectError("simulated"))
     mock_transfers(router, {"/f": b"abc"})
-    router.post(SYNC_URL).mock(
-        return_value=httpx.Response(303, headers={"Location": endpoint})
-    )
+    router.post(SYNC_URL).mock(return_value=httpx.Response(303, headers={"Location": endpoint}))
     fs = make_fs(router)
     try:
         with pytest.raises(ConnectionError) as caught:
@@ -40,13 +38,9 @@ def test_ranged_read_clips_at_eof(router: respx.Router) -> None:
 
 
 @pytest.mark.parametrize("start", [-2, 2])
-def test_ranged_read_rejects_incomplete_intervals(
-    router: respx.Router, start: int
-) -> None:
+def test_ranged_read_rejects_incomplete_intervals(router: respx.Router, start: int) -> None:
     router.get(f"{BASE_URL}/files", params={"p": "/f"}).mock(
-        return_value=httpx.Response(
-            206, content=stream_body(b"ab"), headers={"Content-Range": "bytes 0-1/10"}
-        )
+        return_value=httpx.Response(206, content=stream_body(b"ab"), headers={"Content-Range": "bytes 0-1/10"})
     )
     mock_transfers(router, {"/f": b"abcdefghij"})
     fs = make_fs(router)
@@ -92,14 +86,8 @@ async def test_cat_file_whole(router: respx.Router) -> None:
 
 
 @pytest.mark.parametrize("operation", ["cat_file", "get_file", "open"])
-def test_internal_link_byte_reads(
-    router: respx.Router, tmp_path: Path, operation: str
-) -> None:
-    sim = (
-        VOSpaceSim()
-        .add_file("/target", b"linked bytes")
-        .add_link("/link", "vos://example.test!vault/target")
-    )
+def test_internal_link_byte_reads(router: respx.Router, tmp_path: Path, operation: str) -> None:
+    sim = VOSpaceSim().add_file("/target", b"linked bytes").add_link("/link", "vos://example.test!vault/target")
     sim.install(router)
     fs = make_fs(router)
 
@@ -138,9 +126,7 @@ def test_external_link_byte_reads_are_rejected_before_transfer(
 
     assert sim.byte_requests == []
     assert not any(call.request.url.path == "/arc/synctrans" for call in router.calls)
-    external_calls = [
-        call for call in router.calls if call.request.url.host != "staging.canfar.net"
-    ]
+    external_calls = [call for call in router.calls if call.request.url.host != "staging.canfar.net"]
     assert external_calls == []
     assert list(tmp_path.iterdir()) == []
     fs.close()
@@ -159,9 +145,7 @@ def test_external_link_byte_reads_are_rejected_before_transfer(
         ),
     ],
 )
-def test_external_link_error_redacts_target(
-    router: respx.Router, target: str, secrets: tuple[str, ...]
-) -> None:
+def test_external_link_error_redacts_target(router: respx.Router, target: str, secrets: tuple[str, ...]) -> None:
     sim = VOSpaceSim().add_link("/link", target)
     sim.install(router)
     fs = make_fs(router)
@@ -228,9 +212,7 @@ def test_external_link_rejection_precedes_staging(
         (0, 100, b"abcdef"),
     ],
 )
-async def test_cat_file_slicing(
-    router: respx.Router, start: int | None, end: int | None, expected: bytes
-) -> None:
+async def test_cat_file_slicing(router: respx.Router, start: int | None, end: int | None, expected: bytes) -> None:
     mock_transfers(router, {"/f": b"abcdef"})
     fs = make_fs(router, asynchronous=True)
     assert await fs._cat_file("/f", start, end) == expected
@@ -380,9 +362,7 @@ async def test_cat_ranges_honors_invalid_filesystem_batch_size_before_io(
 
 
 @pytest.mark.parametrize("on_error", ["ignore", "omit"])
-async def test_cat_ranges_rejects_invalid_on_error_before_io(
-    router: respx.Router, on_error: str
-) -> None:
+async def test_cat_ranges_rejects_invalid_on_error_before_io(router: respx.Router, on_error: str) -> None:
     fs = make_fs(router, asynchronous=True)
     with pytest.raises(ValueError, match="on_error"):
         await fs._cat_ranges(["/a"], [0], [1], on_error=on_error)
@@ -423,9 +403,7 @@ async def test_read_consumes_raw_bytes_despite_content_encoding(
     # Register a streamable byte GET declaring Content-Encoding: gzip first so it
     # wins over the simulator's route; httpx would content-decode it via aread().
     router.route(url__regex=rf"^{BASE_URL}/files").mock(
-        return_value=httpx.Response(
-            200, content=gz_body(), headers={"Content-Encoding": "gzip"}
-        ),
+        return_value=httpx.Response(200, content=gz_body(), headers={"Content-Encoding": "gzip"}),
     )
     VOSpaceSim().add_file("/f", raw).install(router)
     fs = make_fs(router, asynchronous=True)
@@ -524,13 +502,9 @@ def test_literal_percent_targets_survive_scalar_list_and_bulk_coordinators(
     assert [
         call.request.url.params["p"]
         for call in router.calls
-        if call.request.method == "GET"
-        and str(call.request.url).startswith(f"{BASE_URL}/files")
+        if call.request.method == "GET" and str(call.request.url).startswith(f"{BASE_URL}/files")
     ] == [internal, internal, internal]
-    assert (
-        call_urls(router, "GET", f"{BASE_URL}/files")
-        == [f"{BASE_URL}/files?p=/authority/dir/100%2541"] * 3
-    )
+    assert call_urls(router, "GET", f"{BASE_URL}/files") == [f"{BASE_URL}/files?p=/authority/dir/100%2541"] * 3
     fs.close()
 
 
@@ -551,9 +525,7 @@ def test_literal_percent_target_survives_wildcard_expansion(
         f"vos://{AUTHORITY}/authority/dir",
         data_child(f"vos://{AUTHORITY}/authority/dir/100%2541", 15),
     )
-    router.get(f"{NODES_URL}/authority/dir").mock(
-        return_value=httpx.Response(200, content=listing)
-    )
+    router.get(f"{NODES_URL}/authority/dir").mock(return_value=httpx.Response(200, content=listing))
     mock_transfers(router, {internal: b"literal-percent"})
     fs = make_fs(router)
 
@@ -587,15 +559,11 @@ def test_literal_percent_target_survives_recursive_wildcard_get(
         data_child(f"vos://{AUTHORITY}/authority/dir/100%2541", 15),
     )
     child = data_xml(f"vos://{AUTHORITY}/authority/dir/100%2541", 15)
-    router.get(f"{NODES_URL}/authority/dir").mock(
-        return_value=httpx.Response(200, content=listing)
-    )
+    router.get(f"{NODES_URL}/authority/dir").mock(return_value=httpx.Response(200, content=listing))
     correct_node = router.get(f"{NODES_URL}/authority/dir/100%2541").mock(
         return_value=httpx.Response(200, content=child)
     )
-    wrong_node = router.get(f"{NODES_URL}/authority/dir/100A").mock(
-        return_value=httpx.Response(404)
-    )
+    wrong_node = router.get(f"{NODES_URL}/authority/dir/100A").mock(return_value=httpx.Response(404))
     mock_transfers(router, {internal: b"literal-percent"})
     fs = make_fs(router)
 
@@ -633,18 +601,12 @@ def test_literal_percent_directory_survives_recursive_get(
         data_child(f"vos://{AUTHORITY}/root/100%2541/child", 5),
     )
     child = data_xml(f"vos://{AUTHORITY}/root/100%2541/child", 5)
-    router.get(f"{NODES_URL}/root").mock(
-        return_value=httpx.Response(200, content=root_listing)
-    )
+    router.get(f"{NODES_URL}/root").mock(return_value=httpx.Response(200, content=root_listing))
     correct_dir = router.get(f"{NODES_URL}/root/100%2541").mock(
         return_value=httpx.Response(200, content=percent_listing)
     )
-    router.get(f"{NODES_URL}/root/100%2541/child").mock(
-        return_value=httpx.Response(200, content=child)
-    )
-    wrong_dir = router.get(f"{NODES_URL}/root/100A").mock(
-        return_value=httpx.Response(404)
-    )
+    router.get(f"{NODES_URL}/root/100%2541/child").mock(return_value=httpx.Response(200, content=child))
+    wrong_dir = router.get(f"{NODES_URL}/root/100A").mock(return_value=httpx.Response(404))
     mock_transfers(router, {"/root/100%41/child": b"child"})
     fs = make_fs(router)
 
@@ -689,9 +651,7 @@ def test_direct_byte_endpoint_303_is_consumed_once_without_credentials(
         return_value=httpx.Response(200, content=data_xml(f"vos://{AUTHORITY}/d.bin"))
     )
     endpoint = "http://download.test/files/preauth:TESTTOKEN/d.bin"
-    post = router.post(SYNC_URL).mock(
-        return_value=httpx.Response(303, headers={"Location": endpoint})
-    )
+    post = router.post(SYNC_URL).mock(return_value=httpx.Response(303, headers={"Location": endpoint}))
     seen_auth: list[str | None] = []
 
     class DirectBytes(httpx.AsyncByteStream):
@@ -744,9 +704,7 @@ def test_error_response_carries_retry_after_and_fault(router: respx.Router) -> N
 
     mock_capabilities(router)
     router.get(f"{NODES_URL}/x").mock(
-        return_value=httpx.Response(
-            503, headers={"Retry-After": "42"}, text="ServiceBusy: try again later"
-        )
+        return_value=httpx.Response(503, headers={"Retry-After": "42"}, text="ServiceBusy: try again later")
     )
     fs = make_fs(router)
     with pytest.raises(errors.VOSpaceError) as excinfo:

@@ -119,8 +119,7 @@ def _pin_stat_rendering(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
 
 def test_stat_overlaps_reads_but_writes_in_operand_order() -> None:
     info: dict[str, object] = {
-        f"/f{index:02d}": {**_RICH, "name": f"/f{index:02d}", "size": 1}
-        for index in range(_BOUND + 4)
+        f"/f{index:02d}": {**_RICH, "name": f"/f{index:02d}", "size": 1} for index in range(_BOUND + 4)
     }
     info["/f03"] = FileNotFoundError("gone")
     info["/f07"] = {"type": "file"}
@@ -128,13 +127,9 @@ def test_stat_overlaps_reads_but_writes_in_operand_order() -> None:
 
     result = _invoke("stat", operands, sources={"memory": _source(filesystem)})
 
-    expected = "".join(
-        _stat_line(path) for path in info if path not in {"/f03", "/f07"}
-    )
+    expected = "".join(_stat_line(path) for path in info if path not in {"/f03", "/f07"})
     assert (result.exit_code, result.stdout) == (1, expected)
-    assert result.stderr == (
-        "stat: memory:/f03: not found\nstat: memory:/f07: incompatible result\n"
-    )
+    assert result.stderr == ("stat: memory:/f03: not found\nstat: memory:/f07: incompatible result\n")
     assert filesystem.started == list(info)
     assert filesystem.completed[0] == "/f15"
     assert filesystem.peak == _BOUND
@@ -167,11 +162,7 @@ def test_ls_overlaps_reads_but_renders_blocks_and_diagnostics_in_order() -> None
     result = _invoke("ls", operands, sources={"memory": _source(filesystem)})
 
     assert result.exit_code == 1
-    assert result.stdout == (
-        "memory:/b-file\n\nmemory:/a-dir:\nchild\n\nmemory:/z-dir:\nchild\n"
-    )
-    assert result.stderr == (
-        "ls: memory:/missing: not found\nls: memory:/denied: permission denied\n"
-    )
+    assert result.stdout == ("memory:/b-file\n\nmemory:/a-dir:\nchild\n\nmemory:/z-dir:\nchild\n")
+    assert result.stderr == ("ls: memory:/missing: not found\nls: memory:/denied: permission denied\n")
     assert filesystem.started == list(info)
     assert filesystem.completed == list(reversed(info))

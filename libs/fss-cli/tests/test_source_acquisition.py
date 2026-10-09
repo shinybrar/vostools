@@ -75,9 +75,7 @@ def test_ls_stops_acquisition_after_a_source_factory_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: broken: source factory failure (ValueError): factory\\\\\\x00\\x0d\\x0a\n"
-    )
+    assert result.stderr == ("ls: broken: source factory failure (ValueError): factory\\\\\\x00\\x0d\\x0a\n")
     assert [event[0] for event in events] == ["factory", "enter", "exit"]
     exception_type, exception, traceback = first.exit_calls[0]
     assert exception_type is ValueError
@@ -103,9 +101,7 @@ def test_ls_rejects_an_incompatible_source_context_manager(
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: broken: source factory returned incompatible async context manager\n"
-    )
+    assert result.stderr == ("ls: broken: source factory returned incompatible async context manager\n")
 
 
 def test_ls_stops_after_source_entry_failure_without_exiting_failed_entry() -> None:
@@ -137,9 +133,7 @@ def test_ls_stops_after_source_entry_failure_without_exiting_failed_entry() -> N
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: broken: source entry failure (LookupError): entry\\\\\\x00\\x0d\\x0a\n"
-    )
+    assert result.stderr == ("ls: broken: source entry failure (LookupError): entry\\\\\\x00\\x0d\\x0a\n")
     assert [event[0] for event in events] == [
         "factory",
         "enter",
@@ -183,9 +177,7 @@ def test_ls_exits_a_source_that_yields_an_incompatible_filesystem(
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: broken: source yielded incompatible async filesystem\n"
-    )
+    assert result.stderr == ("ls: broken: source yielded incompatible async filesystem\n")
     assert [event[0] for event in events] == ["factory", "enter", "exit"]
     assert events[1][-1] == events[2][-1]
 

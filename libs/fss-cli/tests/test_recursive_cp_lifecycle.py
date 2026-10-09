@@ -523,9 +523,7 @@ def test_recursive_cp_classifies_listing_failures(phase: str) -> None:
     assert not [call for call in calls if call[0] in {"mkdir", "put_file"}]
 
 
-def test_recursive_cp_drains_sibling_listings_after_failure_before_source_exit() -> (
-    None
-):
+def test_recursive_cp_drains_sibling_listings_after_failure_before_source_exit() -> None:
     entries: dict[str, bytes | None] = {
         "/": None,
         "/docs": None,

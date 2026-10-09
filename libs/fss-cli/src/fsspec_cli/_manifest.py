@@ -78,11 +78,7 @@ def _shared_tokens_match(
     destination_tokens: Mapping[str, object],
 ) -> bool:
     """Check that every verification token present on both sides agrees."""
-    return all(
-        destination_tokens[name] == value
-        for name, value in source_tokens
-        if name in destination_tokens
-    )
+    return all(destination_tokens[name] == value for name, value in source_tokens if name in destination_tokens)
 
 
 def _tokens(info: Mapping[object, object]) -> tuple[tuple[str, str | bytes], ...]:

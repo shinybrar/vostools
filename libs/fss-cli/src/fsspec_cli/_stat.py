@@ -60,11 +60,7 @@ class _StatSuccess:
 def _format_mtime(mtime: float) -> str:
     local = time.localtime(mtime)
     month = _MONTHS[local.tm_mon - 1]
-    return (
-        f"{month} {local.tm_mday:2d} "
-        f"{local.tm_hour:02d}:{local.tm_min:02d}:{local.tm_sec:02d} "
-        f"{local.tm_year}"
-    )
+    return f"{month} {local.tm_mday:2d} {local.tm_hour:02d}:{local.tm_min:02d}:{local.tm_sec:02d} {local.tm_year}"
 
 
 def _validate_info(  # noqa: C901, PLR0911, PLR0912 - locked Local-rich shape checks.
@@ -157,12 +153,7 @@ async def _trace_operands(
     # Reads overlap under the shared bound; lines and diagnostics are still
     # emitted strictly in operand order, and an operand whose read raised
     # propagates at its own position, after every earlier operand's output.
-    outcomes = await _run_bounded(
-        [
-            partial(_read_operand, operand, filesystems[operand.name])
-            for operand in operands
-        ]
-    )
+    outcomes = await _run_bounded([partial(_read_operand, operand, filesystems[operand.name]) for operand in operands])
     failures: list[_Failure] = []
     for outcome in outcomes:
         if outcome is None:  # pragma: no cover - only after a raised read.

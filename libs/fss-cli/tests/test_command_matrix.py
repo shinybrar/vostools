@@ -11,8 +11,9 @@ from fsspec.asyn import AsyncFileSystem
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 from ._ansi import strip_ansi
 from ._matrix_support import (
@@ -60,9 +61,7 @@ def test_hermetic_guard_rejects_name_resolution() -> None:
     with pytest.raises(AssertionError) as caught:
         socket.getaddrinfo("example.test", 443)
 
-    assert str(caught.value) == (
-        "hermetic command-matrix tests prohibit network access"
-    )
+    assert str(caught.value) == ("hermetic command-matrix tests prohibit network access")
 
 
 def _local_command_path(root: Path) -> str:
@@ -155,14 +154,8 @@ def test_adapted_memory_long_listing_profile_is_sparse_and_uses_detail(
         "memory",
         source,
         "/docs",
-        exact_directory=(
-            "-?????????  -  -  -  8  -  guide.md\n"
-            "-?????????  -  -  -  9  -  notes.txt\n"
-        ),
-        human_directory=(
-            "-?????????  -  -  -  8B  -  guide.md\n"
-            "-?????????  -  -  -  9B  -  notes.txt\n"
-        ),
+        exact_directory=("-?????????  -  -  -  8  -  guide.md\n-?????????  -  -  -  9  -  notes.txt\n"),
+        human_directory=("-?????????  -  -  -  8B  -  guide.md\n-?????????  -  -  -  9B  -  notes.txt\n"),
     )
 
     assert all(isinstance(fs, AsyncFileSystemWrapper) for fs in source.filesystems)
@@ -585,13 +578,9 @@ def test_cross_source_cp_between_adapted_local_and_memory(
     app = App(
         {
             "local": _ProbedSource(
-                lambda: AsyncFileSystemWrapper(
-                    LocalFileSystem(skip_instance_cache=True), asynchronous=True
-                )
+                lambda: AsyncFileSystemWrapper(LocalFileSystem(skip_instance_cache=True), asynchronous=True)
             ),
-            "memory": _ProbedSource(
-                lambda: AsyncFileSystemWrapper(memory, asynchronous=True)
-            ),
+            "memory": _ProbedSource(lambda: AsyncFileSystemWrapper(memory, asynchronous=True)),
         }
     )
 
@@ -632,9 +621,7 @@ def test_adapted_local_recursive_cp_profile_uses_native_temporary_storage(
     )
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
-    assert (destination_parent / "copy" / "nested" / "notes.txt").read_bytes() == (
-        b"notes"
-    )
+    assert (destination_parent / "copy" / "nested" / "notes.txt").read_bytes() == (b"notes")
     assert (destination_parent / "copy" / "empty").is_dir()
     assert all(isinstance(fs, AsyncFileSystemWrapper) for fs in source.filesystems)
     assert all(isinstance(fs.sync_fs, LocalFileSystem) for fs in source.filesystems)
@@ -735,21 +722,14 @@ def test_recursive_cp_between_distinct_adapted_source_names(
     memory.makedirs("/destination")
 
     def source_factory(form: str) -> AsyncFileSystemWrapper:
-        if form == "local":
-            filesystem = LocalFileSystem(skip_instance_cache=True)
-        else:
-            filesystem = memory
+        filesystem = LocalFileSystem(skip_instance_cache=True) if form == "local" else memory
         return AsyncFileSystemWrapper(filesystem, asynchronous=True)
 
     source = _ProbedSource(lambda: source_factory(source_form))
     destination = _ProbedSource(lambda: source_factory(destination_form))
-    source_path = (
-        _local_command_path(local_source) if source_form == "local" else "/source"
-    )
+    source_path = _local_command_path(local_source) if source_form == "local" else "/source"
     destination_path = (
-        _local_command_path(local_destination / "copy")
-        if destination_form == "local"
-        else "/destination/copy"
+        _local_command_path(local_destination / "copy") if destination_form == "local" else "/destination/copy"
     )
 
     result = _invoke(

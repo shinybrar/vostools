@@ -125,11 +125,7 @@ class ClientPool:
         """Construct one client for the given TLS configuration."""
         return httpx.AsyncClient(
             transport=self._injected,
-            verify=(
-                self._certificate_context()
-                if use_cert and self._injected is None
-                else True
-            ),
+            verify=(self._certificate_context() if use_cert and self._injected is None else True),
             follow_redirects=False,
             trust_env=self._trust_env,
             timeout=self._timeout,

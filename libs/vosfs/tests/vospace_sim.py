@@ -33,10 +33,7 @@ if TYPE_CHECKING:
     import respx
 
 _NODES_PREFIX = urlsplit(NODES_URL).path
-_NS = (
-    'xmlns:vos="http://www.ivoa.net/xml/VOSpace/v2.0" '
-    'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-)
+_NS = 'xmlns:vos="http://www.ivoa.net/xml/VOSpace/v2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
 
 
 class VOSpaceSim:
@@ -107,9 +104,7 @@ class VOSpaceSim:
             return
         properties = self.properties.get(path) if preserve_identity else None
         authority = self.authorities.get(path) if preserve_identity else None
-        self.nodes[path] = (
-            "link" if target is not None else "container" if content is None else "data"
-        )
+        self.nodes[path] = "link" if target is not None else "container" if content is None else "data"
         self.wire_types[path] = wire_type
         if authority is None:
             self.authorities.pop(path, None)
@@ -128,16 +123,10 @@ class VOSpaceSim:
     def install(self, router: respx.Router) -> None:
         """Register every simulator route on ``router``."""
         mock_capabilities(router)
-        router.route(url__regex=rf"^{re.escape(NODES_URL)}").mock(
-            side_effect=self._node_op
-        )
+        router.route(url__regex=rf"^{re.escape(NODES_URL)}").mock(side_effect=self._node_op)
         router.post(SYNC_URL).mock(side_effect=self._negotiate)
-        router.get(url__regex=rf"^{re.escape(BASE_URL)}/details").mock(
-            side_effect=self._details
-        )
-        router.route(url__regex=rf"^{re.escape(BASE_URL)}/files").mock(
-            side_effect=self._byte_op
-        )
+        router.get(url__regex=rf"^{re.escape(BASE_URL)}/details").mock(side_effect=self._details)
+        router.route(url__regex=rf"^{re.escape(BASE_URL)}/files").mock(side_effect=self._byte_op)
 
     # -- node operations -----------------------------------------------------
 
@@ -177,9 +166,7 @@ class VOSpaceSim:
         if kind is None:
             return httpx.Response(404)
         if kind == "container":
-            return httpx.Response(
-                200, content=self._container_document(path, children=children)
-            )
+            return httpx.Response(200, content=self._container_document(path, children=children))
         return httpx.Response(200, content=self._data_document(path))
 
     def _node_path(self, request: httpx.Request) -> str:

@@ -43,12 +43,7 @@ def _valid_root(value: object) -> TypeGuard[str]:
 
 
 def _valid_entry(value: object, *, root_file: bool = False) -> TypeGuard[str]:
-    return (
-        type(value) is str
-        and (bool(value) or root_file)
-        and "/" not in value
-        and valid_display_text(value)
-    )
+    return type(value) is str and (bool(value) or root_file) and "/" not in value and valid_display_text(value)
 
 
 def _entries(
@@ -103,12 +98,7 @@ def _valid_root_file(rows: Mapping[str, _WalkRow], root: _WalkRow) -> bool:
     rows_with_empty_file = [row for row in rows.values() if "" in row.files]
     if not rows_with_empty_file:
         return True
-    return (
-        rows_with_empty_file == [root]
-        and root.directories == ()
-        and root.files == ("",)
-        and len(rows) == 1
-    )
+    return rows_with_empty_file == [root] and root.directories == () and root.files == ("",) and len(rows) == 1
 
 
 def _all_rows_reachable(rows: Mapping[str, _WalkRow], root: _WalkRow) -> bool:
@@ -198,9 +188,7 @@ async def _walk_tree(
         return _Failure(request.operand)
     except Exception as error:  # noqa: BLE001 - classify awaited backend failure.
         return _Failure(request.operand, backend_error=error)
-    values: list[object] = [
-        (row.root, list(row.directories), list(row.files)) for row in listed
-    ]
+    values: list[object] = [(row.root, list(row.directories), list(row.files)) for row in listed]
     rows = _validated_rows(request, values)
     if rows is None:
         return _Failure(request.operand)

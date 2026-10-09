@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO
 
 from fsspec.asyn import AsyncFileSystem
+
 from fsspec_cli import App
 
 if TYPE_CHECKING:

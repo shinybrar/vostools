@@ -135,9 +135,7 @@ def test_find_directories_fails_when_a_nested_directory_cannot_be_listed() -> No
     assert source.exit_calls[0][1] is denied
 
 
-@pytest.mark.parametrize(
-    "arguments", [["memory:/missing"], ["--type", "d", "memory:/missing"]]
-)
+@pytest.mark.parametrize("arguments", [["memory:/missing"], ["--type", "d", "memory:/missing"]])
 def test_find_reports_a_missing_operand_as_not_found(arguments: list[str]) -> None:
     _events, source = _source(info={"/missing": FileNotFoundError()})
 
@@ -479,9 +477,7 @@ def test_find_rejects_an_inconsistent_listing_entry_atomically_and_cleans_up() -
 
 
 def test_find_validates_the_complete_result_before_output() -> None:
-    _events, source = _source(
-        {"/docs": [_entry("/docs/good"), _entry("/docs/bad\nname")]}
-    )
+    _events, source = _source({"/docs": [_entry("/docs/good"), _entry("/docs/bad\nname")]})
 
     result = _invoke("find", ["memory:/docs"], sources={"memory": source})
 

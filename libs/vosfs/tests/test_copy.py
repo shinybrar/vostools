@@ -64,9 +64,7 @@ def test_copy_raw_percent_urls_decode_source_and_destination_once(
     assert files["/tree%42/child"] == b"child"
     assert all("/vos:" not in path for path in files)
     assert "/tree%2542" in created
-    byte_urls = call_urls(router, "GET", f"{BASE_URL}/files") + call_urls(
-        router, "PUT", f"{BASE_URL}/files"
-    )
+    byte_urls = call_urls(router, "GET", f"{BASE_URL}/files") + call_urls(router, "PUT", f"{BASE_URL}/files")
     assert any("p=/src%2541/file" in url for url in byte_urls)
     assert any("p=/dest%2542/copied" in url for url in byte_urls)
     assert any("p=/tree%2542/child" in url for url in byte_urls)
@@ -121,9 +119,7 @@ def test_copy_rejects_external_link_before_destination_mutation(
     assert "/new-parent/dst" not in sim.nodes
     assert sim.byte_requests == []
     assert not any(call.request.url.path == "/arc/synctrans" for call in router.calls)
-    assert not any(
-        call.request.url.host != "staging.canfar.net" for call in router.calls
-    )
+    assert not any(call.request.url.host != "staging.canfar.net" for call in router.calls)
     assert [call.request for call in router.calls if call.request.method != "GET"] == []
     assert "secret-token" not in str(router.calls)
     fs.close()
@@ -132,12 +128,7 @@ def test_copy_rejects_external_link_before_destination_mutation(
 def test_recursive_copy_preserves_empty_container(router: respx.Router) -> None:
     # Regression: recursive copy must materialize empty source containers, not
     # only containers that happen to hold a copied file.
-    sim = (
-        VOSpaceSim()
-        .add_container("/from")
-        .add_file("/from/a", b"a")
-        .add_container("/from/empty")
-    )
+    sim = VOSpaceSim().add_container("/from").add_file("/from/a", b"a").add_container("/from/empty")
     sim.install(router)
     fs = make_fs(router)
     fs.copy("/from", "/to", recursive=True)

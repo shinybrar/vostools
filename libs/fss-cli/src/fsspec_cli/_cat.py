@@ -66,8 +66,7 @@ def _render_staging_failure(
     rendered_class = _render_diagnostic_value(type(error).__name__)
     rendered_message = _render_diagnostic_value(str(error))
     typer.echo(
-        f"{prefix} {rendered_operand}: staging failure "
-        f"({rendered_class}): {rendered_message}",
+        f"{prefix} {rendered_operand}: staging failure ({rendered_class}): {rendered_message}",
         err=True,
         color=True,
     )
@@ -280,11 +279,7 @@ class _CatProgress:
 
     @property
     def succeeded(self) -> bool:
-        return (
-            not self.failures
-            and self.output_error is None
-            and self.staging_cleanup_error is None
-        )
+        return not self.failures and self.output_error is None and self.staging_cleanup_error is None
 
     def command_error(self) -> Exception | None:
         for failure in self.failures:
@@ -368,9 +363,7 @@ async def _run_cat(
     operands: tuple[_CatOperand, ...],
     sources: Mapping[str, AsyncFilesystemSource],
 ) -> None:
-    mapped = tuple(
-        operand for operand in operands if isinstance(operand, _MappedOperand)
-    )
+    mapped = tuple(operand for operand in operands if isinstance(operand, _MappedOperand))
 
     async def execute(filesystems: Mapping[str, AsyncFileSystem]) -> None:
         progress = _CatProgress(failures=[])

@@ -13,8 +13,9 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 import pytest
-from fsspec_cli import App
 from typer.main import get_command
+
+from fsspec_cli import App
 
 from ._support import _invoke, _RecordingSource
 
@@ -169,9 +170,7 @@ def test_info_renders_every_normalized_field_and_python_extra_value() -> None:
     result = _invoke("info", ["memory:/docs/report.txt"], sources={"memory": source})
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, _OUTPUT, "")
-    assert [(event[0], event[2]) for event in events if event[0] == "info"] == [
-        ("info", "/docs/report.txt")
-    ]
+    assert [(event[0], event[2]) for event in events if event[0] == "info"] == [("info", "/docs/report.txt")]
     assert not any(event[0] == "ls" for event in events)
     assert source.call_count == 1
 
@@ -425,9 +424,7 @@ def test_info_freezes_each_validated_mapping_key_spelling() -> None:
     assert (first.repr_calls, second.repr_calls) == (1, 1)
 
 
-def test_info_turns_an_ordinary_repr_failure_into_an_atomic_incompatible_result() -> (
-    None
-):
+def test_info_turns_an_ordinary_repr_failure_into_an_atomic_incompatible_result() -> None:
     error = RuntimeError("repr failed")
     source = _RecordingSource(
         [],

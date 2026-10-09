@@ -174,9 +174,7 @@ def _classify_existing(  # noqa: PLR0911 - stable metadata categories.
     try:
         entry = _entry("", path, info)
     except _UnsupportedEntryError as error:
-        return _RecursiveCpFailure(
-            operand, "unsupported entry type", backend_error=error
-        )
+        return _RecursiveCpFailure(operand, "unsupported entry type", backend_error=error)
     except _IncompatibleResultError as error:
         return _RecursiveCpFailure(operand, "incompatible result", backend_error=error)
     return entry
@@ -203,9 +201,7 @@ def _render_cleanup_failure(
     _render_operand_diagnostic(
         command,
         source,
-        "staging cleanup failure "
-        f"({rendered_class}); host staging residue may remain; "
-        "destination residue may remain",
+        f"staging cleanup failure ({rendered_class}); host staging residue may remain; destination residue may remain",
     )
 
 
@@ -407,15 +403,11 @@ class _RecursiveCopy:
         if not _LOGGER.isEnabledFor(logging.DEBUG):
             return
         if existing.size != source_entry.size:
-            basis = (
-                f"sizes differ ({source_entry.size} != {existing.size}); "
-                "content comparison skipped"
-            )
+            basis = f"sizes differ ({source_entry.size} != {existing.size}); content comparison skipped"
         else:
             basis = describe_checksums(source_entry.tokens, existing.tokens)
         _LOGGER.debug(
-            "content identity %s -> %s: source tokens [%s], destination tokens "
-            "[%s]; %s",
+            "content identity %s -> %s: source tokens [%s], destination tokens [%s]; %s",
             _location(self.source.name, source_entry.path),
             _location(self.destination.name, destination_path),
             ", ".join(name for name, _ in source_entry.tokens),
@@ -492,15 +484,9 @@ class _RecursiveCopy:
                         )
 
             identical = False
-            if (
-                failure is None
-                and existing is not None
-                and existing.size == source_entry.size
-            ):
+            if failure is None and existing is not None and existing.size == source_entry.size:
                 try:
-                    identical = await same_contents(
-                        self.destination_filesystem, destination_path, temporary
-                    )
+                    identical = await same_contents(self.destination_filesystem, destination_path, temporary)
                 except Exception as error:  # noqa: BLE001 - content verification boundary.
                     failure = _RecursiveCpFailure(
                         self.destination,
@@ -593,9 +579,7 @@ class _RecursiveCopy:
         if result.failure is not None:
             return replace(result.failure, rendered=True)
         if result.cleanup_error is not None:
-            return _RecursiveCpFailure(
-                self.source, backend_error=result.cleanup_error, rendered=True
-            )
+            return _RecursiveCpFailure(self.source, backend_error=result.cleanup_error, rendered=True)
         return None
 
     def _settle_transfers(
@@ -618,9 +602,7 @@ class _RecursiveCopy:
             result = cast("_TransferResult", outcome.value)
             if first is not None:
                 if result.cleanup_error is not None:
-                    _render_cleanup_failure(
-                        self.command, self.source, result.cleanup_error
-                    )
+                    _render_cleanup_failure(self.command, self.source, result.cleanup_error)
                 continue
             first = self._render_transfer_failure(result)
             if first is None and result.skipped is not None:
@@ -681,16 +663,9 @@ class _RecursiveCopy:
         skipped: Mapping[str, _ManifestEntry],
     ) -> _RecursiveCpFailure | None:
         paths = [_destination_path(root, entry.relative) for entry in manifest]
-        outcomes = await _run_bounded(
-            [
-                partial(_call, self.destination_filesystem, "_info", path)
-                for path in paths
-            ]
-        )
+        outcomes = await _run_bounded([partial(_call, self.destination_filesystem, "_info", path) for path in paths])
         try:
-            for source_entry, path, outcome in zip(
-                manifest, paths, outcomes, strict=True
-            ):
+            for source_entry, path, outcome in zip(manifest, paths, outcomes, strict=True):
                 destination_entry = _entry(
                     source_entry.relative,
                     path,
@@ -701,9 +676,7 @@ class _RecursiveCopy:
                 tokens_match = (
                     destination_entry.tokens == proof.tokens
                     if proof is not None
-                    else _shared_tokens_match(
-                        source_entry.tokens, dict(destination_entry.tokens)
-                    )
+                    else _shared_tokens_match(source_entry.tokens, dict(destination_entry.tokens))
                 )
                 if destination_entry.size != source_entry.size or not tokens_match:
                     return _RecursiveCpFailure(
@@ -745,9 +718,7 @@ class _RecursiveCopy:
                 source_info,
             )
         except _UnsupportedEntryError as error:
-            return _RecursiveCpFailure(
-                self.source, "unsupported entry type", backend_error=error
-            )
+            return _RecursiveCpFailure(self.source, "unsupported entry type", backend_error=error)
         except _EntryLimitError as error:
             return _RecursiveCpFailure(
                 self.source,
@@ -755,9 +726,7 @@ class _RecursiveCopy:
                 backend_error=error,
             )
         except _IncompatibleResultError as error:
-            return _RecursiveCpFailure(
-                self.source, "incompatible result", backend_error=error
-            )
+            return _RecursiveCpFailure(self.source, "incompatible result", backend_error=error)
         except Exception as error:  # noqa: BLE001 - classify walk boundary.
             return _read_failure(self.source, error)
 

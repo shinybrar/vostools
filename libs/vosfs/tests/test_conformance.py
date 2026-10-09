@@ -27,9 +27,7 @@ def test_walk_find_glob_du(router: respx.Router) -> None:
     assert sorted(fs.find("/d")) == ["/d/a.txt", "/d/sub/b.txt"]
     assert fs.glob("/d/*.txt") == ["/d/a.txt"]
     assert fs.du("/d") == 5
-    walked = {
-        root: (sorted(dirs), sorted(files)) for root, dirs, files in fs.walk("/d")
-    }
+    walked = {root: (sorted(dirs), sorted(files)) for root, dirs, files in fs.walk("/d")}
     assert walked["/d"] == (["sub"], ["a.txt"])
     fs.close()
 
@@ -138,9 +136,7 @@ async def test_open_async_unsupported(router: respx.Router) -> None:
 # --- callbacks ------------------------------------------------------------------
 
 
-async def test_get_file_reports_byte_callback(
-    router: respx.Router, tmp_path: object
-) -> None:
+async def test_get_file_reports_byte_callback(router: respx.Router, tmp_path: object) -> None:
     sim = VOSpaceSim().add_file("/f", b"0123456789")
     sim.install(router)
     fs = make_fs(router, asynchronous=True)
@@ -170,12 +166,7 @@ def test_listings_cache_invalidated_on_mutation(router: respx.Router) -> None:
 
 
 def test_recursive_removal_clears_subtree_cache(router: respx.Router) -> None:
-    sim = (
-        VOSpaceSim()
-        .add_container("/d")
-        .add_container("/d/sub")
-        .add_file("/d/sub/x", b"x")
-    )
+    sim = VOSpaceSim().add_container("/d").add_container("/d/sub").add_file("/d/sub/x", b"x")
     sim.install(router)
     fs = make_fs(router, use_listings_cache=True)
     fs.ls("/d/sub")  # cache a descendant listing

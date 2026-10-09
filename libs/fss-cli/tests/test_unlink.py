@@ -201,9 +201,7 @@ def test_unlink_reports_unknown_names_with_locale_sorted_known_names() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
-    assert result.stderr == (
-        "unlink: other:/file: unknown filesystem (known: alpha, zeta)\n"
-    )
+    assert result.stderr == ("unlink: other:/file: unknown filesystem (known: alpha, zeta)\n")
 
 
 @pytest.mark.parametrize("info_result", [{"type": "directory"}, {"type": "link"}, {}])
@@ -280,18 +278,14 @@ def test_unlink_reports_uncertain_mutation_after_delete_attempt(
     source = _RecordingSource(
         [],
         rm_file_error=error if stage == "rm_file" else None,
-        post_info_by_path={
-            "/docs/notes.txt": error if stage == "post_info" else FileNotFoundError()
-        },
+        post_info_by_path={"/docs/notes.txt": error if stage == "post_info" else FileNotFoundError()},
     )
 
     result = _invoke("unlink", ["memory:/docs/notes.txt"], sources={"memory": source})
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "unlink: memory:/docs/notes.txt: uncertain mutation state\n"
-    )
+    assert result.stderr == ("unlink: memory:/docs/notes.txt: uncertain mutation state\n")
 
 
 def test_unlink_rejects_when_post_check_shows_the_file_still_present() -> None:
@@ -304,9 +298,7 @@ def test_unlink_rejects_when_post_check_shows_the_file_still_present() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "unlink: memory:/docs/notes.txt: uncertain mutation state\n"
-    )
+    assert result.stderr == ("unlink: memory:/docs/notes.txt: uncertain mutation state\n")
 
 
 def test_unlink_rejects_ambiguous_post_check_shapes() -> None:
@@ -319,9 +311,7 @@ def test_unlink_rejects_ambiguous_post_check_shapes() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "unlink: memory:/docs/notes.txt: uncertain mutation state\n"
-    )
+    assert result.stderr == ("unlink: memory:/docs/notes.txt: uncertain mutation state\n")
 
 
 def test_unlink_refuses_an_active_same_thread_event_loop(monkeypatch) -> None:
@@ -407,9 +397,7 @@ def test_unlink_stops_acquisition_after_a_source_factory_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "unlink: alpha: source factory failure (ValueError): factory\n"
-    )
+    assert result.stderr == ("unlink: alpha: source factory failure (ValueError): factory\n")
 
 
 def test_unlink_reports_source_exit_failures() -> None:
@@ -459,13 +447,9 @@ def test_unlink_never_calls_rm_or_rmdir_primitives() -> None:
     filesystem = source.contexts[0].filesystem
 
     async def prove_traps() -> None:
-        with pytest.raises(
-            AssertionError, match="_rm must not be called by file-only removal"
-        ):
+        with pytest.raises(AssertionError, match="_rm must not be called by file-only removal"):
             await filesystem._rm("/docs/notes.txt")
-        with pytest.raises(
-            AssertionError, match="_rmdir must not be called by file-only removal"
-        ):
+        with pytest.raises(AssertionError, match="_rmdir must not be called by file-only removal"):
             await filesystem._rmdir("/docs")
 
     asyncio.run(prove_traps())

@@ -11,10 +11,10 @@ import httpx
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
-
 from vosfs import VOSpaceFileSystem
+
+from fsspec_cli import App
 
 from ._matrix_support import (
     _ProbedSource,
@@ -84,9 +84,7 @@ def _exercise_info(
     assert [event.stage for event in source.lifecycle] == ["factory", "enter", "exit"]
     if source._close is not None:
         assert [event.stage for event in source.close_calls] == ["close"]
-    assert [(call.exc_type, call.exception) for call in source.exit_calls] == [
-        (None, None)
-    ]
+    assert [(call.exc_type, call.exception) for call in source.exit_calls] == [(None, None)]
 
 
 def test_adapted_memory_info_preserves_sparse_shape_and_datetime_extra(
@@ -125,8 +123,7 @@ def test_adapted_memory_info_preserves_sparse_shape_and_datetime_extra(
     _exercise_info("memory", source, "/docs/report.txt", expected)
 
     assert all(
-        isinstance(filesystem, AsyncFileSystemWrapper)
-        and isinstance(filesystem.sync_fs, MemoryFileSystem)
+        isinstance(filesystem, AsyncFileSystemWrapper) and isinstance(filesystem.sync_fs, MemoryFileSystem)
         for filesystem in source.filesystems
     )
 
@@ -169,8 +166,7 @@ def test_adapted_local_info_preserves_rich_shape_and_local_extras(
     _exercise_info("local", source, path, expected)
 
     assert all(
-        isinstance(filesystem, AsyncFileSystemWrapper)
-        and isinstance(filesystem.sync_fs, LocalFileSystem)
+        isinstance(filesystem, AsyncFileSystemWrapper) and isinstance(filesystem.sync_fs, LocalFileSystem)
         for filesystem in source.filesystems
     )
 

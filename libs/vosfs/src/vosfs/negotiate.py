@@ -49,8 +49,7 @@ def parse_transfer_details(data: bytes) -> list[NegotiatedEndpoint]:
     endpoints = [
         NegotiatedEndpoint(url=endpoint, security_method=_security_method_of(element))
         for element in root.iter()
-        if local_name(element.tag) == "protocol"
-        and (endpoint := _endpoint_of(element)) is not None
+        if local_name(element.tag) == "protocol" and (endpoint := _endpoint_of(element)) is not None
     ]
     if not endpoints:
         msg = "the transfer negotiation returned no usable protocol endpoint"
@@ -58,9 +57,7 @@ def parse_transfer_details(data: bytes) -> list[NegotiatedEndpoint]:
     return endpoints
 
 
-def choose_protocol(
-    endpoints: list[NegotiatedEndpoint], credential_method: str
-) -> NegotiatedEndpoint:
+def choose_protocol(endpoints: list[NegotiatedEndpoint], credential_method: str) -> NegotiatedEndpoint:
     """Return the first endpoint compatible with the configured credential.
 
     A pre-authorized (anonymous) endpoint is always usable; otherwise the

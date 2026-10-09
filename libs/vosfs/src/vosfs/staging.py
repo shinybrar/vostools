@@ -250,9 +250,7 @@ def wrap_write(  # noqa: PLR0913 - explicit compression and TextIOWrapper settin
             buffer = compr[resolved](buffer, mode=mode[0])
         if "b" in mode:
             return StagedBinaryWriteFile(buffer, staged)
-        return StagedTextWriteFile(
-            buffer, staged, encoding=encoding, errors=errors, newline=newline
-        )
+        return StagedTextWriteFile(buffer, staged, encoding=encoding, errors=errors, newline=newline)
     except BaseException:
         with contextlib.suppress(BaseException):
             staged.discard()

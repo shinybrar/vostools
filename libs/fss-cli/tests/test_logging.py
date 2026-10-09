@@ -10,9 +10,10 @@ import pytest
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
+from typer.testing import CliRunner
+
 from fsspec_cli import App
 from fsspec_cli._logging import _redact
-from typer.testing import CliRunner
 
 from ._support import _RecordingSource
 
@@ -48,9 +49,7 @@ def _memory(
 def _local() -> Callable[[], object]:
     @asynccontextmanager
     async def source() -> AsyncIterator[AsyncFileSystemWrapper]:
-        yield AsyncFileSystemWrapper(
-            LocalFileSystem(skip_instance_cache=True), asynchronous=True
-        )
+        yield AsyncFileSystemWrapper(LocalFileSystem(skip_instance_cache=True), asynchronous=True)
 
     return source
 
@@ -61,9 +60,7 @@ def _run(sources: Mapping[str, object], arguments: list[str]) -> Result:
 
 def _info_records(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
     return [
-        record
-        for record in caplog.records
-        if record.name.startswith("fsspec_cli.") and record.levelno == logging.INFO
+        record for record in caplog.records if record.name.startswith("fsspec_cli.") and record.levelno == logging.INFO
     ]
 
 
@@ -101,11 +98,7 @@ def test_same_source_copy_logs_one_verified_record_per_file(
     ]
     assert all(record.name == "fsspec_cli._cp" for record in records)
     assert all(type(record.__dict__["duration"]) is float for record in records)
-    assert (
-        records[0]
-        .getMessage()
-        .startswith("copied memory:/docs/a.txt -> memory:/a.txt (3 bytes, ")
-    )
+    assert records[0].getMessage().startswith("copied memory:/docs/a.txt -> memory:/a.txt (3 bytes, ")
 
 
 def test_cross_source_copy_logs_a_staged_record_and_debug_staging(
@@ -126,8 +119,7 @@ def test_cross_source_copy_logs_a_staged_record_and_debug_staging(
         ("staged", "memory:/docs/a.txt", f"local:{tmp_path.as_posix()}/a.txt", 3),
     ]
     assert any(
-        record.levelno == logging.DEBUG and record.getMessage().startswith("staged ")
-        for record in caplog.records
+        record.levelno == logging.DEBUG and record.getMessage().startswith("staged ") for record in caplog.records
     )
 
 
@@ -139,9 +131,7 @@ def test_move_logs_a_moved_record(caplog: pytest.LogCaptureFixture) -> None:
     )
     caplog.set_level(logging.INFO, logger="fsspec_cli")
 
-    result = _run(
-        {"memory": source}, ["mv", "memory:/docs/notes.txt", "memory:/docs/moved.txt"]
-    )
+    result = _run({"memory": source}, ["mv", "memory:/docs/notes.txt", "memory:/docs/moved.txt"])
 
     assert (result.exit_code, result.stderr) == (0, "")
     assert [_summary(record) for record in _info_records(caplog)] == [
@@ -183,8 +173,7 @@ def test_recursive_copy_rerun_logs_skipped_identical_files(
     identity = [
         record.getMessage()
         for record in caplog.records
-        if record.levelno == logging.DEBUG
-        and record.getMessage().startswith("content identity")
+        if record.levelno == logging.DEBUG and record.getMessage().startswith("content identity")
     ]
     assert any("SHA-256 of staged contents equal" in message for message in identity)
 
@@ -219,9 +208,7 @@ def test_records_never_contain_query_strings_or_tokens(
         ("memory:/line\nbreak", "memory:/line\\x0abreak"),
     ],
 )
-def test_redaction_drops_credentials_queries_and_controls(
-    value: str, expected: str
-) -> None:
+def test_redaction_drops_credentials_queries_and_controls(value: str, expected: str) -> None:
     assert _redact(value) == expected
 
 

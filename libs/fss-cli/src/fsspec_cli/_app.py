@@ -36,9 +36,7 @@ from ._test import _run_test
 from ._tree import _run_tree, _TreeRequest
 from ._unlink import _run_unlink
 
-AsyncFilesystemSource: TypeAlias = Callable[
-    [], AbstractAsyncContextManager[AbstractFileSystem]
-]
+AsyncFilesystemSource: TypeAlias = Callable[[], AbstractAsyncContextManager[AbstractFileSystem]]
 
 
 class RecursionCapabilities(TypedDict, total=False):
@@ -201,10 +199,7 @@ def _validate_source_name(name: object) -> None:
         msg = "async filesystem source names must be strings"
         raise TypeError(msg)
     if not name or any(character in name for character in (":", "\0", "\n")):
-        msg = (
-            "async filesystem source names must be non-empty and contain no colon, "
-            "NUL, or newline"
-        )
+        msg = "async filesystem source names must be non-empty and contain no colon, NUL, or newline"
         raise ValueError(msg)
     if name.startswith("-"):
         msg = "async filesystem source names must not start with '-'"
@@ -485,9 +480,7 @@ class App:
         def cat(operands: _CatOperands = None) -> None:
             """Concatenate files to standard output."""
             parsed = tuple(
-                _StdinOperand()
-                if operand == "-"
-                else _parse_mapped_operand("cat", operand, self._sources)
+                _StdinOperand() if operand == "-" else _parse_mapped_operand("cat", operand, self._sources)
                 for operand in operands or ("-",)
             )
             _run_async_command(
@@ -547,9 +540,7 @@ class App:
         @self.typer_app.command()
         def rmdir(operands: _Operands) -> None:
             """Remove empty directories."""
-            mapped = tuple(
-                self._destructive_operand("rmdir", operand) for operand in operands
-            )
+            mapped = tuple(self._destructive_operand("rmdir", operand) for operand in operands)
             _run_async_command(
                 "rmdir",
                 lambda: _run_rmdir("rmdir", mapped, self._sources),
@@ -624,9 +615,7 @@ class App:
         mapped = self._mapped_all("rm", spellings)
         for spelling, operand in zip(spellings, mapped, strict=True):
             rejected = _is_root(operand.path) or (
-                _has_dot_segment(operand.path)
-                if recursive
-                else _has_final_dot_segment(operand.path)
+                _has_dot_segment(operand.path) if recursive else _has_final_dot_segment(operand.path)
             )
             if rejected:
                 rendered = _render_diagnostic_value(spelling)

@@ -6,8 +6,9 @@ import asyncio
 import re
 
 import pytest
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 from ._support import (
     _RecordingContext,
@@ -43,9 +44,7 @@ def _plain(text: str) -> str:
 
 
 def test_mv_help_comes_from_typed_callback() -> None:
-    result = CliRunner().invoke(
-        App({"memory": _source_must_not_run}).typer_app, ["mv", "--help"]
-    )
+    result = CliRunner().invoke(App({"memory": _source_must_not_run}).typer_app, ["mv", "--help"])
     help_text = _plain(result.stdout)
 
     assert result.exit_code == 0
@@ -88,12 +87,8 @@ def test_mv_accepts_matching_metadata_tokens_and_proves_source_absence() -> None
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
     assert not source.get_file_paths
-    mutation_index = next(
-        index for index, event in enumerate(source.events) if event[0] == "mv"
-    )
-    assert [
-        event[:3] for event in source.events[mutation_index + 1 :] if event[0] == "info"
-    ] == [
+    mutation_index = next(index for index, event in enumerate(source.events) if event[0] == "mv")
+    assert [event[:3] for event in source.events[mutation_index + 1 :] if event[0] == "info"] == [
         ("info", 1, "/docs/moved.txt"),
         ("info", 1, "/docs/notes.txt"),
     ]
@@ -120,8 +115,7 @@ def test_mv_rejects_mismatched_metadata_token() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "mv: memory:/docs/moved.txt: verification failure; "
-        "destination residue may remain\n",
+        "mv: memory:/docs/moved.txt: verification failure; destination residue may remain\n",
     )
     assert not source.get_file_paths
 
@@ -156,8 +150,7 @@ def test_mv_freezes_source_metadata_before_mutation() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "mv: memory:/docs/moved.txt: verification failure; "
-        "destination residue may remain\n",
+        "mv: memory:/docs/moved.txt: verification failure; destination residue may remain\n",
     )
     assert source.file_contents == {"/docs/moved.txt": b"payload"}
     assert not source.get_file_paths
@@ -227,9 +220,7 @@ def test_mv_passes_literal_source_destination_and_parent_paths_to_backend() -> N
     assert [(event[2], event[3]) for event in source.events if event[0] == "mv"] == [
         ("/docs//./notes.txt", "/out//./moved.txt")
     ]
-    assert ("info", 1, "/out//.") in [
-        event[:3] for event in source.events if event[0] == "info"
-    ]
+    assert ("info", 1, "/out//.") in [event[:3] for event in source.events if event[0] == "info"]
 
 
 def test_mv_moves_multiple_files_into_existing_directory_in_argv_order() -> None:
@@ -288,9 +279,7 @@ def test_mv_multiple_files_replaces_duplicate_basenames_in_argv_order() -> None:
         ),
     ],
 )
-def test_mv_multiple_files_requires_existing_directory_destination(
-    destination: str, expected: str
-) -> None:
+def test_mv_multiple_files_requires_existing_directory_destination(destination: str, expected: str) -> None:
     source = _source(
         contents={
             "/docs/one.txt": b"one",
@@ -299,15 +288,11 @@ def test_mv_multiple_files_requires_existing_directory_destination(
         },
         directories={"/", "/docs"},
         info_by_path=(
-            {"/docs/missing": FileNotFoundError("/docs/missing")}
-            if destination.endswith("/missing")
-            else None
+            {"/docs/missing": FileNotFoundError("/docs/missing")} if destination.endswith("/missing") else None
         ),
     )
 
-    result = _invoke(
-        source, "memory:/docs/one.txt", "memory:/docs/two.txt", destination
-    )
+    result = _invoke(source, "memory:/docs/one.txt", "memory:/docs/two.txt", destination)
 
     assert (result.exit_code, result.stdout, result.stderr) == (1, "", expected)
     assert source.file_contents["/docs/one.txt"] == b"one"
@@ -332,8 +317,7 @@ def test_mv_multiple_files_stops_after_failure_and_preserves_prior_move() -> Non
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "mv: memory:/docs/out: uncertain mutation state; "
-        "destination residue may remain\n",
+        "mv: memory:/docs/out: uncertain mutation state; destination residue may remain\n",
     )
     assert source.file_contents == {
         "/docs/out/one.txt": b"one",
@@ -665,9 +649,7 @@ def test_mv_leaves_usage_failures_to_typer(
         ),
     ],
 )
-def test_mv_validates_every_mapped_input_before_source_acquisition(
-    arguments: tuple[str, ...], diagnostic: str
-) -> None:
+def test_mv_validates_every_mapped_input_before_source_acquisition(arguments: tuple[str, ...], diagnostic: str) -> None:
     result = CliRunner().invoke(
         App({"memory": _source_must_not_run, "other": _source_must_not_run}).typer_app,
         ["mv", *arguments],
@@ -692,9 +674,7 @@ def test_mv_rejects_directory_source_before_mutation() -> None:
     )
     assert not [event for event in source.events if event[0] == "mv"]
     assert not [event for event in source.events if event[0] == "get_file"]
-    assert [event[:3] for event in source.events if event[0] == "info"] == [
-        ("info", 1, "/docs")
-    ]
+    assert [event[:3] for event in source.events if event[0] == "info"] == [("info", 1, "/docs")]
 
 
 def test_mv_reports_mutation_exception_as_uncertain_residue() -> None:
@@ -705,8 +685,7 @@ def test_mv_reports_mutation_exception_as_uncertain_residue() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "mv: memory:/docs/moved.txt: uncertain mutation state; "
-        "destination residue may remain\n",
+        "mv: memory:/docs/moved.txt: uncertain mutation state; destination residue may remain\n",
     )
     assert source.file_contents == {"/docs/notes.txt": b"payload"}
     assert not source.get_file_paths
@@ -727,8 +706,7 @@ def test_mv_reports_source_deletion_failure_after_destination_creation() -> None
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "mv: memory:/docs/moved.txt: uncertain mutation state; "
-        "destination residue may remain\n",
+        "mv: memory:/docs/moved.txt: uncertain mutation state; destination residue may remain\n",
     )
     assert source.file_contents == {
         "/docs/notes.txt": b"payload",
@@ -750,8 +728,7 @@ def test_mv_rejects_destination_type_mismatch_and_source_residue() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "mv: memory:/docs/moved.txt: verification failure; "
-        "destination residue may remain\n",
+        "mv: memory:/docs/moved.txt: verification failure; destination residue may remain\n",
     )
     assert source.file_contents == {"/docs/notes.txt": b"payload"}
     assert "/docs/moved.txt" in source.directories
@@ -774,8 +751,7 @@ def test_mv_rejects_destination_size_mismatch_after_source_removal() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "mv: memory:/docs/moved.txt: verification failure; "
-        "destination residue may remain\n",
+        "mv: memory:/docs/moved.txt: verification failure; destination residue may remain\n",
     )
     assert source.file_contents == {"/docs/moved.txt": b"short"}
 
@@ -813,8 +789,7 @@ def test_mv_rejects_source_retained_after_complete_destination() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "mv: memory:/docs/moved.txt: verification failure; "
-        "destination residue may remain\n",
+        "mv: memory:/docs/moved.txt: verification failure; destination residue may remain\n",
     )
     assert source.file_contents == {
         "/docs/notes.txt": b"payload",

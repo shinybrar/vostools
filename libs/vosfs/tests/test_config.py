@@ -23,12 +23,12 @@ def test_explicit_token_wins_and_ignores_environment() -> None:
 
 
 def test_explicit_tokenfile_and_certfile() -> None:
-    assert resolve_credential(
-        token=None, tokenfile="/t", certfile=None, environ={}
-    ) == Credential(method="token", token_file="/t")
-    assert resolve_credential(
-        token=None, tokenfile=None, certfile="/c.pem", environ={}
-    ) == Credential(method="certificate", certfile="/c.pem")
+    assert resolve_credential(token=None, tokenfile="/t", certfile=None, environ={}) == Credential(
+        method="token", token_file="/t"
+    )
+    assert resolve_credential(token=None, tokenfile=None, certfile="/c.pem", environ={}) == Credential(
+        method="certificate", certfile="/c.pem"
+    )
 
 
 def test_multiple_explicit_credentials_rejected() -> None:
@@ -37,9 +37,9 @@ def test_multiple_explicit_credentials_rejected() -> None:
 
 
 def test_environment_fallbacks() -> None:
-    assert resolve_credential(
-        token=None, tokenfile=None, certfile=None, environ={config.ENV_TOKEN: "e"}
-    ) == Credential(method="token", token_env=config.ENV_TOKEN)
+    assert resolve_credential(token=None, tokenfile=None, certfile=None, environ={config.ENV_TOKEN: "e"}) == Credential(
+        method="token", token_env=config.ENV_TOKEN
+    )
     assert resolve_credential(
         token=None,
         tokenfile=None,
@@ -116,17 +116,11 @@ def test_read_bearer_on_empty_token_credential_raises() -> None:
 
 
 def test_endpoint_trailing_slash_removed() -> None:
-    assert (
-        validate_endpoint("https://h.test/arc/", has_credential=True)
-        == "https://h.test/arc"
-    )
+    assert validate_endpoint("https://h.test/arc/", has_credential=True) == "https://h.test/arc"
 
 
 def test_endpoint_http_allowed_when_anonymous() -> None:
-    assert (
-        validate_endpoint("http://h.test/arc", has_credential=False)
-        == "http://h.test/arc"
-    )
+    assert validate_endpoint("http://h.test/arc", has_credential=False) == "http://h.test/arc"
 
 
 @pytest.mark.parametrize(

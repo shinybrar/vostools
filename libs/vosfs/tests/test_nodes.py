@@ -201,9 +201,7 @@ def test_external_entity_is_rejected() -> None:
     payload = (
         b'<?xml version="1.0"?>'
         b'<!DOCTYPE node [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
-        b'<vos:node xmlns:vos="'
-        + VOSPACE_NS.encode()
-        + b'" uri="vos://x">&xxe;</vos:node>'
+        b'<vos:node xmlns:vos="' + VOSPACE_NS.encode() + b'" uri="vos://x">&xxe;</vos:node>'
     )
     with pytest.raises(ValueError):  # noqa: PT011 - defusedxml raises a ValueError subclass
         parse_node(payload)
@@ -394,9 +392,7 @@ def test_build_transfer_document_is_valid(direction: str) -> None:
     assert tree.tag == f"{{{VOSPACE_NS}}}transfer"
     assert tree.get("version") == "2.1"
     assert tree.findtext(f"{{{VOSPACE_NS}}}direction") == direction
-    assert tree.findtext(f"{{{VOSPACE_NS}}}target") == (
-        "vos://cadc.nrc.ca!vault/user/report.fits"
-    )
+    assert tree.findtext(f"{{{VOSPACE_NS}}}target") == ("vos://cadc.nrc.ca!vault/user/report.fits")
     protocols = tree.findall(f"{{{VOSPACE_NS}}}protocol")
     assert len(protocols) == 2
 

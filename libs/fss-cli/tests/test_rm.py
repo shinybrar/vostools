@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, NoReturn
 
 import pytest
 import typer
+
 from fsspec_cli._rm import _write_verbose_line
 
 from ._support import _invoke, _RecordingSource, _source_must_not_run
@@ -201,9 +202,7 @@ def test_rm_force_ignores_missing_operands_and_removes_later_files() -> None:
     assert result.exit_code == 0
     assert result.stdout == ""
     assert result.stderr == ""
-    assert [event[2] for event in events if event[0] == "rm_file"] == [
-        "/docs/notes.txt"
-    ]
+    assert [event[2] for event in events if event[0] == "rm_file"] == ["/docs/notes.txt"]
 
 
 def test_rm_force_succeeds_when_all_operands_are_missing() -> None:
@@ -268,10 +267,7 @@ def test_rm_force_reports_timeouts_before_mutation(error: Exception) -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "rm: memory:/docs/notes.txt: backend failure "
-        f"({type(error).__name__}): {error}\n"
-    )
+    assert result.stderr == (f"rm: memory:/docs/notes.txt: backend failure ({type(error).__name__}): {error}\n")
     assert [event[0] for event in source.events].count("rm_file") == 0
 
 
@@ -299,9 +295,7 @@ def test_rm_force_continues_mixed_operands_in_order() -> None:
     assert result.exit_code == 1
     assert result.stdout == ""
     assert result.stderr == "rm: memory:/docs/failing.txt: permission denied\n"
-    assert [
-        (event[0], event[2]) for event in events if event[0] in {"info", "rm_file"}
-    ] == [
+    assert [(event[0], event[2]) for event in events if event[0] in {"info", "rm_file"}] == [
         ("info", "/docs/missing.txt"),
         ("info", "/docs/existing.txt"),
         ("rm_file", "/docs/existing.txt"),
@@ -321,9 +315,7 @@ def test_rm_force_confirms_many_file_removals() -> None:
     )
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
-    assert [
-        (event[0], event[2]) for event in events if event[0] in {"info", "rm_file"}
-    ] == [
+    assert [(event[0], event[2]) for event in events if event[0] in {"info", "rm_file"}] == [
         ("info", "/docs/a.txt"),
         ("rm_file", "/docs/a.txt"),
         ("info", "/docs/a.txt"),
@@ -420,9 +412,7 @@ def test_rm_force_uses_distinct_sources_and_skips_missing_operands() -> None:
     assert result.stdout == ""
     assert result.stderr == ""
     assert alpha.call_count == beta.call_count == 1
-    assert [event[2] for event in events if event[0] == "rm_file"] == [
-        "/docs/notes.txt"
-    ]
+    assert [event[2] for event in events if event[0] == "rm_file"] == ["/docs/notes.txt"]
 
 
 def test_rm_force_preserves_cancellation() -> None:
@@ -446,9 +436,7 @@ def test_rm_force_reports_cleanup_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert (
-        result.stderr == "rm: memory: source exit failure (OSError): cleanup failed\n"
-    )
+    assert result.stderr == "rm: memory: source exit failure (OSError): cleanup failed\n"
 
 
 def test_rm_accepts_operand_after_option_terminator() -> None:
@@ -578,9 +566,7 @@ def test_rm_reports_unknown_names_with_locale_sorted_known_names() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
-    assert result.stderr == (
-        "rm: other:/file: unknown filesystem (known: alpha, zeta)\n"
-    )
+    assert result.stderr == ("rm: other:/file: unknown filesystem (known: alpha, zeta)\n")
 
 
 @pytest.mark.parametrize("info_result", [{"type": "directory"}, {"type": "link"}, {}])
@@ -657,9 +643,7 @@ def test_rm_reports_uncertain_mutation_after_delete_attempt(
     source = _RecordingSource(
         [],
         rm_file_error=error if stage == "rm_file" else None,
-        post_info_by_path={
-            "/docs/notes.txt": error if stage == "post_info" else FileNotFoundError()
-        },
+        post_info_by_path={"/docs/notes.txt": error if stage == "post_info" else FileNotFoundError()},
     )
 
     result = _invoke("rm", ["memory:/docs/notes.txt"], sources={"memory": source})
@@ -805,9 +789,7 @@ def test_rm_stops_acquisition_after_a_source_factory_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "rm: broken: source factory failure (ValueError): factory\n"
-    )
+    assert result.stderr == ("rm: broken: source factory failure (ValueError): factory\n")
     assert [event[0] for event in events] == ["factory", "enter", "exit"]
 
 
@@ -916,13 +898,9 @@ def test_rm_never_calls_rm_or_rmdir_primitives() -> None:
     filesystem = source.contexts[0].filesystem
 
     async def prove_traps() -> None:
-        with pytest.raises(
-            AssertionError, match="_rm must not be called by file-only removal"
-        ):
+        with pytest.raises(AssertionError, match="_rm must not be called by file-only removal"):
             await filesystem._rm("/docs/notes.txt")
-        with pytest.raises(
-            AssertionError, match="_rmdir must not be called by file-only removal"
-        ):
+        with pytest.raises(AssertionError, match="_rmdir must not be called by file-only removal"):
             await filesystem._rmdir("/docs")
 
     asyncio.run(prove_traps())
@@ -956,9 +934,7 @@ def test_rm_d_removes_mixed_files_and_empty_directories_without_stdout() -> None
     )
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
-    assert [
-        (event[0], event[2]) for event in events if event[0] in {"rm_file", "rmdir"}
-    ] == [
+    assert [(event[0], event[2]) for event in events if event[0] in {"rm_file", "rmdir"}] == [
         ("rm_file", "/docs/file.txt"),
         ("rmdir", "/docs/empty"),
     ]
@@ -973,9 +949,7 @@ def test_rm_d_continues_after_non_empty_directory_failure() -> None:
             "/docs/not-empty": {"type": "directory"},
             "/docs/file.txt": {"type": "file"},
         },
-        rmdir_by_path={
-            "/docs/not-empty": OSError(errno.ENOTEMPTY, "directory not empty")
-        },
+        rmdir_by_path={"/docs/not-empty": OSError(errno.ENOTEMPTY, "directory not empty")},
     )
 
     result = _invoke(
@@ -998,9 +972,7 @@ def test_rm_d_continues_after_an_earlier_success() -> None:
             "/docs/file.txt": {"type": "file"},
             "/docs/not-empty": {"type": "directory"},
         },
-        rmdir_by_path={
-            "/docs/not-empty": OSError(errno.ENOTEMPTY, "directory not empty")
-        },
+        rmdir_by_path={"/docs/not-empty": OSError(errno.ENOTEMPTY, "directory not empty")},
     )
 
     result = _invoke(
@@ -1013,9 +985,7 @@ def test_rm_d_continues_after_an_earlier_success() -> None:
     assert result.stdout == ""
     assert result.stderr == "rm: memory:/docs/not-empty: directory not empty\n"
     assert [event[2] for event in events if event[0] == "rm_file"] == ["/docs/file.txt"]
-    assert any(
-        event[0] == "rmdir" and event[2] == "/docs/not-empty" for event in events
-    )
+    assert any(event[0] == "rmdir" and event[2] == "/docs/not-empty" for event in events)
 
 
 @pytest.mark.parametrize(
@@ -1042,9 +1012,7 @@ def test_rm_d_rejects_missing_and_non_qualifying_types(
     result = _invoke("rm", ["-d", "memory:/docs/item"], sources={"memory": source})
 
     assert (result.exit_code, result.stdout, result.stderr) == (1, "", expected)
-    assert not any(
-        event[0] in {"rm_file", "rmdir", "rm", "ls"} for event in source.events
-    )
+    assert not any(event[0] in {"rm_file", "rmdir", "rm", "ls"} for event in source.events)
 
 
 def test_rm_d_rejects_a_source_without_async_rmdir() -> None:
@@ -1167,9 +1135,7 @@ def test_rm_d_uses_distinct_sources_for_files_and_empty_directories() -> None:
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
     assert alpha.call_count == beta.call_count == 1
-    assert [
-        (event[0], event[2]) for event in events if event[0] in {"rm_file", "rmdir"}
-    ] == [
+    assert [(event[0], event[2]) for event in events if event[0] in {"rm_file", "rmdir"}] == [
         ("rm_file", "/docs/notes.txt"),
         ("rmdir", "/docs/empty"),
     ]
@@ -1194,9 +1160,7 @@ def test_rm_d_reports_access_and_service_failures(
     assert result.exit_code == 1
     assert result.stdout == ""
     assert result.stderr == f"rm: memory:/docs/item: {category}\n"
-    assert not any(
-        event[0] in {"rm_file", "rmdir", "rm", "ls"} for event in source.events
-    )
+    assert not any(event[0] in {"rm_file", "rmdir", "rm", "ls"} for event in source.events)
 
 
 def test_rm_d_reports_cleanup_failure() -> None:
@@ -1210,9 +1174,7 @@ def test_rm_d_reports_cleanup_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert (
-        result.stderr == "rm: memory: source exit failure (OSError): cleanup failed\n"
-    )
+    assert result.stderr == "rm: memory: source exit failure (OSError): cleanup failed\n"
 
 
 @pytest.mark.parametrize(
@@ -1249,9 +1211,7 @@ def test_rm_d_rejects_root_and_final_dot_paths_before_source_entry(path: str) ->
         source_calls += 1
         raise AssertionError
 
-    result = _invoke(
-        "rm", ["-d", "memory:/file", path], sources={"memory": source_must_not_run}
-    )
+    result = _invoke("rm", ["-d", "memory:/file", path], sources={"memory": source_must_not_run})
 
     assert result.exit_code == 2
     assert result.stdout == ""
@@ -1596,9 +1556,7 @@ def test_rm_verbose_reports_cleanup_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == "memory:/docs/notes.txt\n"
-    assert (
-        result.stderr == "rm: memory: source exit failure (OSError): cleanup failed\n"
-    )
+    assert result.stderr == "rm: memory: source exit failure (OSError): cleanup failed\n"
 
 
 @pytest.mark.parametrize(

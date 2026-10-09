@@ -397,17 +397,13 @@ def test_byte_range_commands_accept_the_option_terminator(
 ) -> None:
     source = _ReadSource(info_result=info_result, payload=b"xy")
 
-    result = _invoke(
-        command, ["-c", "2", "--", "memory:/a"], sources={"memory": source}
-    )
+    result = _invoke(command, ["-c", "2", "--", "memory:/a"], sources={"memory": source})
 
     assert (result.exit_code, result.stdout_bytes, result.stderr) == (0, b"xy", "")
     assert source.calls == expected_calls
 
 
-@pytest.mark.parametrize(
-    "info_result", [None, {}, {"size": True}, {"size": -1}, {"size": 1.0}]
-)
+@pytest.mark.parametrize("info_result", [None, {}, {"size": True}, {"size": -1}, {"size": 1.0}])
 def test_tail_rejects_incompatible_info_before_read(info_result: object) -> None:
     source = _ReadSource(info_result=info_result)
     if info_result is None:
@@ -536,8 +532,7 @@ def test_head_retains_primary_backend_failure_when_cleanup_also_fails() -> None:
     assert (result.exit_code, result.stdout_bytes, result.stderr) == (
         1,
         b"",
-        "head: memory:/a: permission denied\n"
-        "head: memory: source exit failure (OSError): cleanup\n",
+        "head: memory:/a: permission denied\nhead: memory: source exit failure (OSError): cleanup\n",
     )
     assert isinstance(source.exit_calls[0][1], PermissionError)
 

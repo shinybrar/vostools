@@ -106,8 +106,7 @@ def _group(info: Mapping[str, object]) -> str | int | None:
         if groups is None:
             summary = "?"
         elif isinstance(groups, (tuple, list)) and all(
-            type(group) is str and group and valid_display_text(group)
-            for group in groups
+            type(group) is str and group and valid_display_text(group) for group in groups
         ):
             summary = ",".join(str(group) for group in groups) if groups else "NONE"
         else:
@@ -185,11 +184,7 @@ def _link_target(info: Mapping[str, object]) -> str | None:
 
 
 def _extra(info: Mapping[str, object]) -> Mapping[str, object]:
-    values = {
-        key: value
-        for key, value in info.items()
-        if type(key) is str and key not in _INFO_FIELDS
-    }
+    values = {key: value for key, value in info.items() if type(key) is str and key not in _INFO_FIELDS}
     return MappingProxyType(values)
 
 
@@ -249,17 +244,12 @@ def _format_mtime(value: float | None) -> str:
         return "-"
     now = time.time()
     recent = now - 15_552_000 <= value <= now + 3600
-    return time.strftime(
-        "%b %e %H:%M" if recent else "%b %e  %Y", time.localtime(value)
-    )
+    return time.strftime("%b %e %H:%M" if recent else "%b %e  %Y", time.localtime(value))
 
 
 def _type_indicator(row: ListingRow) -> str:
     if row.mode is None:
-        return (
-            row.permissions
-            or {"file": "-", "dir": "d", "link": "l", "other": "?"}[row.kind] + "?" * 9
-        )
+        return row.permissions or {"file": "-", "dir": "d", "link": "l", "other": "?"}[row.kind] + "?" * 9
     mode_kind = _MODE_KIND_BY_TYPE.get(stat.S_IFMT(row.mode), "other")
     if mode_kind != row.kind:
         return {"file": "-", "dir": "d", "link": "l", "other": "?"}[row.kind] + "?" * 9
@@ -282,24 +272,14 @@ def render_listing(
         return ""
 
     owners = {
-        value: "-"
-        if value is None
-        else owner_name(value)
-        if isinstance(value, int)
-        else value
+        value: "-" if value is None else owner_name(value) if isinstance(value, int) else value
         for value in {row.owner for row in rows}
     }
     groups = {
-        value: "-"
-        if value is None
-        else group_name(value)
-        if isinstance(value, int)
-        else value
+        value: "-" if value is None else group_name(value) if isinstance(value, int) else value
         for value in {row.group for row in rows}
     }
-    rendered_columns: list[tuple[bool, list[str]]] = [
-        (False, [_type_indicator(row) for row in rows])
-    ]
+    rendered_columns: list[tuple[bool, list[str]]] = [(False, [_type_indicator(row) for row in rows])]
     rendered_columns.extend(
         [
             (True, ["-" if row.nlink is None else str(row.nlink) for row in rows]),

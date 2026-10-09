@@ -45,9 +45,7 @@ LENGTH_PROPERTY_URI = "ivo://ivoa.net/vospace/core#length"
 MTIME_PROPERTY_URI = "ivo://ivoa.net/vospace/core#mtime"
 DATE_PROPERTY_URI = "ivo://ivoa.net/vospace/core#date"
 MD5_PROPERTY_URI = "ivo://ivoa.net/vospace/core#MD5"  # OpenCADC extension
-CONTENT_TYPE_PROPERTY_URI = (
-    "ivo://ivoa.net/vospace/core#contenttype"  # OpenCADC extension
-)
+CONTENT_TYPE_PROPERTY_URI = "ivo://ivoa.net/vospace/core#contenttype"  # OpenCADC extension
 
 # Directions this profile emits during synchronous byte negotiation.
 _ALLOWED_DIRECTIONS = ("pullFromVoSpace", "pushToVoSpace")

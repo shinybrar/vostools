@@ -9,10 +9,10 @@ from fsspec.asyn import AsyncFileSystem
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
-
 from vosfs import VOSpaceFileSystem
+
+from fsspec_cli import App
 
 from ._matrix_support import (
     _memory_source,
@@ -76,10 +76,9 @@ def _exercise_du_profile(  # noqa: PLR0913 - matrix golden expectations.
         "exit",
     ] * 4
     # One listing GET per directory; no per-file metadata lookups.
-    assert [
-        (call.operation, call.source_id, call.path, call.detail, call.kwargs)
-        for call in source.calls
-    ] == [("ls", source_id, path, True, {}) for source_id in range(1, 5)]
+    assert [(call.operation, call.source_id, call.path, call.detail, call.kwargs) for call in source.calls] == [
+        ("ls", source_id, path, True, {}) for source_id in range(1, 5)
+    ]
     assert not source.errors
 
 
@@ -103,9 +102,7 @@ def test_adapted_local_du_profile_uses_native_temporary_storage(
         source,
         path,
         exact_output=f"7\t{path}/.hidden\n8\t{path}/guide.md\n9\t{path}/notes.txt\n",
-        human_output=(
-            f"7B\t{path}/.hidden\n8B\t{path}/guide.md\n9B\t{path}/notes.txt\n"
-        ),
+        human_output=(f"7B\t{path}/.hidden\n8B\t{path}/guide.md\n9B\t{path}/notes.txt\n"),
         total=24,
         human_total="24B",
     )
@@ -163,18 +160,8 @@ def test_native_vosfs_du_profile_uses_only_mocked_transport() -> None:
         "vos",
         source,
         "/docs",
-        exact_output=(
-            "7\t/docs/.hidden\n"
-            "8\t/docs/guide.md\n"
-            "1536\t/docs/notes.txt\n"
-            "0\t/docs/shortcut\n"
-        ),
-        human_output=(
-            "7B\t/docs/.hidden\n"
-            "8B\t/docs/guide.md\n"
-            "1.5K\t/docs/notes.txt\n"
-            "0B\t/docs/shortcut\n"
-        ),
+        exact_output=("7\t/docs/.hidden\n8\t/docs/guide.md\n1536\t/docs/notes.txt\n0\t/docs/shortcut\n"),
+        human_output=("7B\t/docs/.hidden\n8B\t/docs/guide.md\n1.5K\t/docs/notes.txt\n0B\t/docs/shortcut\n"),
         total=1551,
         human_total="1.5K",
     )

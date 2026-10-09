@@ -207,12 +207,7 @@ def resolve_timeouts(timeouts: Mapping[str, float] | None) -> dict[str, float] |
         if key not in _TIMEOUT_KEYS:
             msg = f"unknown timeout {key!r}; expected one of {_TIMEOUT_KEYS}"
             raise ValueError(msg)
-        if (
-            not isinstance(value, (int, float))
-            or isinstance(value, bool)
-            or not math.isfinite(value)
-            or value <= 0
-        ):
+        if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= 0:
             msg = f"timeout {key!r} must be a finite positive number, got {value!r}"
             raise ValueError(msg)
         resolved[key] = float(value)

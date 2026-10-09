@@ -215,11 +215,7 @@ def _first_backend_error(
 ) -> Exception | None:
     """Return the first backend exception among ``failures``, if any."""
     return next(
-        (
-            failure.backend_error
-            for failure in failures
-            if failure.backend_error is not None
-        ),
+        (failure.backend_error for failure in failures if failure.backend_error is not None),
         None,
     )
 
@@ -272,9 +268,7 @@ async def _run_mapped_command(
     acquired = False
     failure: _CommandFailureError | None = None
     try:
-        filesystems = await invocation.acquire(
-            tuple(dict.fromkeys(operand.name for operand in operands))
-        )
+        filesystems = await invocation.acquire(tuple(dict.fromkeys(operand.name for operand in operands)))
         acquired = filesystems is not None
         if filesystems is not None:
             await operation(filesystems)
@@ -292,18 +286,12 @@ async def _run_mapped_command(
         ):
             _render_output_failure(command, error.error)
     finally:
-        cleanup_failed = await invocation.close_with_command_error(
-            failure.error if failure is not None else None
-        )
+        cleanup_failed = await invocation.close_with_command_error(failure.error if failure is not None else None)
 
     if failure is not None and failure.propagate is not None:
         raise failure.propagate
     if not acquired or failure is not None or cleanup_failed:
-        if (
-            failure is not None
-            and isinstance(failure.error, BrokenPipeError)
-            and not cleanup_failed
-        ):
+        if failure is not None and isinstance(failure.error, BrokenPipeError) and not cleanup_failed:
             raise typer.Exit(broken_pipe_exit_code)
         raise typer.Exit(1)
 
@@ -363,21 +351,14 @@ def _parse_mapped_operand(
 ) -> _MappedOperand:
     """Parse and validate one ``name:/path`` operand against the known sources."""
     name, separator, path = argument.partition(":")
-    if (
-        not name
-        or not separator
-        or not path.startswith("/")
-        or "\0" in argument
-        or "\n" in argument
-    ):
+    if not name or not separator or not path.startswith("/") or "\0" in argument or "\n" in argument:
         rendered = _render_diagnostic_value(argument)
         _usage_error(command, f"{rendered}: invalid mapped filesystem operand")
 
     if name not in known_names:
         rendered_operand = _render_diagnostic_value(argument)
         rendered_names = ", ".join(
-            _render_diagnostic_value(candidate)
-            for candidate in sorted(known_names, key=_collate)
+            _render_diagnostic_value(candidate) for candidate in sorted(known_names, key=_collate)
         )
         _usage_error(
             command,

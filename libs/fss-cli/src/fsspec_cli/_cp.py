@@ -84,9 +84,7 @@ def _cp_plan(
     if recursive and len(operands) > _MIN_OPERAND_COUNT:
         _usage_error(command, "extra operand")
 
-    mapped = tuple(
-        _parse_mapped_operand(command, operand, known_names) for operand in operands
-    )
+    mapped = tuple(_parse_mapped_operand(command, operand, known_names) for operand in operands)
     if recursive:
         mapped = (
             _canonical_operand(command, mapped[0], source=True),
@@ -94,9 +92,7 @@ def _cp_plan(
         )
     destination = mapped[-1]
     return _CpPlan(
-        requests=tuple(
-            _CpRequest(source=source, destination=destination) for source in mapped[:-1]
-        ),
+        requests=tuple(_CpRequest(source=source, destination=destination) for source in mapped[:-1]),
         require_directory=len(mapped) > _MIN_OPERAND_COUNT,
         recursive=recursive,
     )
@@ -157,9 +153,7 @@ async def _prepare_transfer(
 ) -> tuple[_TransferProof, str] | _CpFailure:
     """Read and validate the source, then resolve the destination path."""
     try:
-        source_info = await _drain_current_operation(
-            source_filesystem._info(request.source.path)
-        )
+        source_info = await _drain_current_operation(source_filesystem._info(request.source.path))
     except Exception as error:  # noqa: BLE001 - classify awaited backend failure.
         return _CpFailure(request.source, backend_error=error)
 
@@ -191,9 +185,7 @@ async def _resolve_destination(  # noqa: C901, PLR0911, PLR0912 - explicit targe
     except Exception as error:  # noqa: BLE001 - classify awaited backend failure.
         return destination.path, _CpFailure(destination, backend_error=error)
     else:
-        if not isinstance(dest_info, Mapping) or not isinstance(
-            dest_info.get("type"), str
-        ):
+        if not isinstance(dest_info, Mapping) or not isinstance(dest_info.get("type"), str):
             return destination.path, _CpFailure(destination, incompatible="result")
         dest_type = dest_info["type"]
         if dest_type == "directory":
@@ -215,9 +207,7 @@ async def _resolve_destination(  # noqa: C901, PLR0911, PLR0912 - explicit targe
         except Exception as error:  # noqa: BLE001 - classify awaited backend failure.
             return resolved, _CpFailure(destination, backend_error=error)
         if collision is not None:
-            if not isinstance(collision, Mapping) or not isinstance(
-                collision.get("type"), str
-            ):
+            if not isinstance(collision, Mapping) or not isinstance(collision.get("type"), str):
                 return resolved, _CpFailure(destination, incompatible="result")
             if collision["type"] == "directory":
                 return resolved, _CpFailure(destination, incompatible="result")
@@ -232,16 +222,10 @@ async def _resolve_destination(  # noqa: C901, PLR0911, PLR0912 - explicit targe
     except Exception as error:  # noqa: BLE001 - classify awaited backend failure.
         return resolved, _CpFailure(destination, backend_error=error)
 
-    if not isinstance(parent_info, Mapping) or not isinstance(
-        parent_info.get("type"), str
-    ):
+    if not isinstance(parent_info, Mapping) or not isinstance(parent_info.get("type"), str):
         return resolved, _CpFailure(destination, incompatible="result")
     if parent_info["type"] != "directory":
-        category = (
-            "not a directory"
-            if parent_info["type"] == "file"
-            else "incompatible result"
-        )
+        category = "not a directory" if parent_info["type"] == "file" else "incompatible result"
         return resolved, _CpFailure(destination, category=category)
 
     return resolved, None
@@ -297,9 +281,7 @@ def _verification_tokens(info: object) -> dict[str, frozenset[str | bytes]]:
     tokens: dict[str, frozenset[str | bytes]] = {}
     for normalized, aliases in _TOKEN_ALIASES:
         values = frozenset(
-            value
-            for alias in aliases
-            if (type(value := info.get(alias)) is str or type(value) is bytes)
+            value for alias in aliases if (type(value := info.get(alias)) is str or type(value) is bytes)
         )
         if values:
             tokens[normalized] = values
@@ -327,9 +309,7 @@ async def _verify_transfer(  # noqa: PLR0913 - one explicit transfer-proof bound
     require_source_absent: bool,
 ) -> _CpFailure | None:
     try:
-        destination_info = await _drain_current_operation(
-            destination_filesystem._info(destination_path)
-        )
+        destination_info = await _drain_current_operation(destination_filesystem._info(destination_path))
     except Exception as error:  # noqa: BLE001 - post-copy verify is residue-bearing.
         return _CpFailure(
             destination,
@@ -342,9 +322,7 @@ async def _verify_transfer(  # noqa: PLR0913 - one explicit transfer-proof bound
     if (
         verified_size is None
         or verified_size != proof.expected_size
-        or not _shared_tokens_match(
-            proof.tokens, _verification_tokens(destination_info)
-        )
+        or not _shared_tokens_match(proof.tokens, _verification_tokens(destination_info))
     ):
         return _CpFailure(
             destination,

@@ -29,11 +29,7 @@ _SECRET = "SECRETTOKEN0123456789abcdef"
 
 
 def _info_records(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
-    return [
-        record
-        for record in caplog.records
-        if record.name.startswith("vosfs") and record.levelno == logging.INFO
-    ]
+    return [record for record in caplog.records if record.name.startswith("vosfs") and record.levelno == logging.INFO]
 
 
 async def test_get_put_and_copy_emit_one_info_record_per_file(
@@ -99,20 +95,12 @@ async def test_move_and_removal_are_logged(
 def _preauth_router(router: respx.Router, files: dict[str, bytes]) -> None:
     """Negotiate a byte endpoint whose path and query both carry secrets."""
     mock_capabilities(router)
-    router.get(url__regex=rf"^{BASE_URL}/nodes").mock(
-        side_effect=lambda request: _data_node_response(request, files)
-    )
-    router.post(SYNC_URL).mock(
-        return_value=httpx.Response(303, headers={"Location": f"{BASE_URL}/details"})
-    )
+    router.get(url__regex=rf"^{BASE_URL}/nodes").mock(side_effect=lambda request: _data_node_response(request, files))
+    router.post(SYNC_URL).mock(return_value=httpx.Response(303, headers={"Location": f"{BASE_URL}/details"}))
     endpoint = f"https://bytes.example/files/preauth:{_SECRET}/f?token={_SECRET}&x=1"
-    router.get(f"{BASE_URL}/details").mock(
-        return_value=httpx.Response(200, content=transfer_details(escape(endpoint)))
-    )
+    router.get(f"{BASE_URL}/details").mock(return_value=httpx.Response(200, content=transfer_details(escape(endpoint))))
     router.get(host="bytes.example").mock(
-        side_effect=lambda _request: httpx.Response(
-            200, content=stream_body(files["/f"])
-        )
+        side_effect=lambda _request: httpx.Response(200, content=stream_body(files["/f"]))
     )
 
 
@@ -126,11 +114,7 @@ async def test_negotiation_debug_records_carry_no_secret_or_query(
 
     assert await fs._cat_file("/f") == b"payload"
 
-    messages = [
-        record.getMessage()
-        for record in caplog.records
-        if record.name.startswith("vosfs")
-    ]
+    messages = [record.getMessage() for record in caplog.records if record.name.startswith("vosfs")]
     negotiated = [message for message in messages if message.startswith("negotiated")]
     assert len(negotiated) == 1
     assert "https://bytes.example/files/preauth:<redacted>/f" in negotiated[0]

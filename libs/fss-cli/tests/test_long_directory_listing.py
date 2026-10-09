@@ -3,6 +3,7 @@
 from types import MappingProxyType
 
 import pytest
+
 from fsspec_cli._listing import to_listing as normalize_listing
 
 from ._support import _invoke, _RecordingSource
@@ -77,18 +78,12 @@ def test_long_listing_rejects_record_breaking_metadata(field: str) -> None:
         (
             "ls",
             ["-l", "memory:/docs"],
-            (
-                "-?????????  -  -  -     2  -  guide.md\n"
-                "-?????????  -  -  -  1536  -  notes.txt\n"
-            ),
+            ("-?????????  -  -  -     2  -  guide.md\n-?????????  -  -  -  1536  -  notes.txt\n"),
         ),
         (
             "ls",
             ["-lh", "memory:/docs"],
-            (
-                "-?????????  -  -  -    2B  -  guide.md\n"
-                "-?????????  -  -  -  1.5K  -  notes.txt\n"
-            ),
+            ("-?????????  -  -  -    2B  -  guide.md\n-?????????  -  -  -  1.5K  -  notes.txt\n"),
         ),
     ],
 )
@@ -126,9 +121,7 @@ def test_long_listing_file_uses_its_info_result_without_calling_ls() -> None:
         MappingProxyType({"name": "/docs/report.bin", "type": "file", "size": 2048}),
     )
 
-    result = _invoke(
-        "ls", ["-lh", "memory:/docs/report.bin"], sources={"memory": source}
-    )
+    result = _invoke("ls", ["-lh", "memory:/docs/report.bin"], sources={"memory": source})
 
     assert (result.exit_code, result.stdout, result.stderr) == (
         0,
@@ -237,14 +230,7 @@ def test_long_listing_preserves_multi_operand_grouping() -> None:
 
     assert (result.exit_code, result.stdout, result.stderr) == (
         0,
-        (
-            "-?????????  -  -  -  1  -  b.txt\n"
-            "\n"
-            "memory:/a:\n"
-            "\n"
-            "memory:/z:\n"
-            "-?????????  -  -  -  3  -  c.txt\n"
-        ),
+        ("-?????????  -  -  -  1  -  b.txt\n\nmemory:/a:\n\nmemory:/z:\n-?????????  -  -  -  3  -  c.txt\n"),
         "",
     )
 
@@ -276,9 +262,7 @@ def test_long_listing_continues_after_an_incompatible_operand_atomically() -> No
         "memory:/good:\n-?????????  -  -  -  4  -  ok.txt\n",
         "ls: memory:/bad: incompatible result\n",
     )
-    assert [
-        (event[0], event[2], event[3]) for event in source.events if event[0] == "ls"
-    ] == [
+    assert [(event[0], event[2], event[3]) for event in source.events if event[0] == "ls"] == [
         ("ls", "/bad", True),
         ("ls", "/good", True),
     ]

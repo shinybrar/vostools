@@ -17,9 +17,7 @@ from ._process_support import (
 
 _NATIVE_NEWLINE = os.linesep.encode()
 _EXPECTED_TTY_STDOUT = b"\x1b[31mred\x1b[0m" + _NATIVE_NEWLINE
-_OUTPUT_ERROR = (
-    b"ls: output: output failure (OSError): disk\\\\bad\\x0aline" + _NATIVE_NEWLINE
-)
+_OUTPUT_ERROR = b"ls: output: output failure (OSError): disk\\\\bad\\x0aline" + _NATIVE_NEWLINE
 _CHILD_PATH = Path(__file__).with_name("_output_process_child.py")
 
 
@@ -87,6 +85,4 @@ def test_output_failure_keeps_already_known_backend_diagnostics() -> None:
 
     assert result.returncode == 1
     assert result.stdout == b""
-    assert result.stderr == (
-        b"ls: memory:/missing: not found" + _NATIVE_NEWLINE + _OUTPUT_ERROR
-    )
+    assert result.stderr == (b"ls: memory:/missing: not found" + _NATIVE_NEWLINE + _OUTPUT_ERROR)

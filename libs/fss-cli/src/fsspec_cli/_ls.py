@@ -120,18 +120,14 @@ async def _trace_and_prepare(
                 human_readable=request.human_readable,
             ).removesuffix("\n")
 
-        long_successes, failures = await _trace_operands(
-            request, filesystems, _read_long_operand
-        )
+        long_successes, failures = await _trace_operands(request, filesystems, _read_long_operand)
         return failures, partial(
             _format_successes,
             long_successes,
             render_long,
             multiple_operands=multiple_operands,
         )
-    plain_successes, failures = await _trace_operands(
-        request, filesystems, _read_plain_operand
-    )
+    plain_successes, failures = await _trace_operands(request, filesystems, _read_plain_operand)
     return failures, partial(
         _format_successes,
         plain_successes,
@@ -188,9 +184,7 @@ async def _classify_operand(
     if not isinstance(info, Mapping):
         return _Failure(operand)
     kind = info.get("type")
-    if type(kind) is not str or (
-        kind not in {"file", "directory"} and info.get("islink") is not True
-    ):
+    if type(kind) is not str or (kind not in {"file", "directory"} and info.get("islink") is not True):
         return _Failure(operand)
     return cast("Mapping[str, object]", info)
 

@@ -9,8 +9,9 @@ from unittest.mock import Mock
 
 import pytest
 from fsspec.asyn import AsyncFileSystem
-from fsspec_cli import App, AsyncFilesystemSource
 from typer.testing import CliRunner, Result
+
+from fsspec_cli import App, AsyncFilesystemSource
 
 from ._ansi import strip_ansi
 from ._support import _RecordingSource
@@ -83,9 +84,7 @@ def test_recursive_rm_disabled_rejects_after_grouped_valid_prefixes(
     )
 
     assert (result.exit_code, result.stdout) == (2, "")
-    assert "No such option: -R" in strip_ansi(
-        result.stderr
-    ) or "No such option: -r" in strip_ansi(result.stderr)
+    assert "No such option: -R" in strip_ansi(result.stderr) or "No such option: -r" in strip_ansi(result.stderr)
     assert source.call_count == 0
     assert events == []
 
@@ -124,11 +123,7 @@ def test_recursive_rm_enabled_removes_a_complete_nested_manifest(option: str) ->
     )
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
-    observed = [
-        (event[0], event[2])
-        for event in events
-        if event[0] in {"info", "ls", "rm_file", "rmdir"}
-    ]
+    observed = [(event[0], event[2]) for event in events if event[0] in {"info", "ls", "rm_file", "rmdir"}]
     assert observed[:4] == [
         ("info", "/docs"),
         ("ls", "/docs"),
@@ -451,9 +446,7 @@ def test_recursive_rm_rejects_a_listing_that_mutates_during_consumption() -> Non
     source = _RecordingSource(
         events,
         info_by_path={"/docs": {"name": "/docs", "type": "directory"}},
-        ls_by_path={
-            "/docs": _MutatingListing([{"name": "/docs/first", "type": "file"}])
-        },
+        ls_by_path={"/docs": _MutatingListing([{"name": "/docs/first", "type": "file"}])},
     )
 
     result = _invoke_recursive_rm(
@@ -479,11 +472,7 @@ def test_recursive_rm_handles_a_deep_finite_manifest_iteratively() -> None:
         events,
         info_by_path={"/docs": {"name": "/docs", "type": "directory"}},
         ls_by_path={
-            path: (
-                [{"name": paths[index + 1], "type": "directory"}]
-                if index < depth
-                else []
-            )
+            path: ([{"name": paths[index + 1], "type": "directory"}] if index < depth else [])
             for index, path in enumerate(paths)
         },
     )
@@ -494,9 +483,7 @@ def test_recursive_rm_handles_a_deep_finite_manifest_iteratively() -> None:
     )
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
-    assert [event[2] for event in events if event[0] == "rmdir"] == list(
-        reversed(paths)
-    )
+    assert [event[2] for event in events if event[0] == "rmdir"] == list(reversed(paths))
 
 
 def test_recursive_rm_force_suppresses_only_a_missing_root() -> None:
@@ -720,11 +707,7 @@ class _CancellingFileSystem(AsyncFileSystem):
         self.info_calls[path] = self.info_calls.get(path, 0) + 1
         if self.stage == "root-info" and path == "/docs":
             await self._cancel_invocation("root-info")
-        if (
-            self.stage == "file-verify"
-            and path == "/docs/file"
-            and path in self.removed
-        ):
+        if self.stage == "file-verify" and path == "/docs/file" and path in self.removed:
             await self._cancel_invocation("file-verify")
             raise FileNotFoundError(path)
         if self.stage == "root-verify" and path == "/docs" and path in self.removed:
