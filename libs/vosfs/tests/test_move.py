@@ -95,14 +95,8 @@ async def test_mv_file_rejects_link_before_mutation(
     with pytest.raises(NotImplementedError, match="moving a LinkNode"):
         await fs._mv_file("/src", destination)
 
-    node_requests = [
-        call.request
-        for call in router.calls
-        if str(call.request.url).startswith(NODES_URL)
-    ]
-    assert ("GET", f"{NODES_URL}/src?limit=0") in [
-        (request.method, str(request.url)) for request in node_requests
-    ]
+    node_requests = [call.request for call in router.calls if str(call.request.url).startswith(NODES_URL)]
+    assert ("GET", f"{NODES_URL}/src?limit=0") in [(request.method, str(request.url)) for request in node_requests]
     assert [call.request for call in router.calls if call.request.method != "GET"] == []
     assert sim.nodes["/src"] == "link"
     assert sim.targets["/src"] == target
@@ -151,14 +145,8 @@ def test_move_rejects_link_before_mutation(
     with pytest.raises(NotImplementedError, match="moving a LinkNode"):
         fs.mv("/src", destination)
 
-    node_requests = [
-        call.request
-        for call in router.calls
-        if str(call.request.url).startswith(NODES_URL)
-    ]
-    assert ("GET", f"{NODES_URL}/src?limit=0") in [
-        (request.method, str(request.url)) for request in node_requests
-    ]
+    node_requests = [call.request for call in router.calls if str(call.request.url).startswith(NODES_URL)]
+    assert ("GET", f"{NODES_URL}/src?limit=0") in [(request.method, str(request.url)) for request in node_requests]
     assert [call.request for call in router.calls if call.request.method != "GET"] == []
     assert sim.nodes["/src"] == "link"
     assert sim.targets["/src"] == target
@@ -194,8 +182,7 @@ def test_recursive_move_keeps_source_when_one_child_copy_fails(
 ) -> None:
     source_listing = container_xml(
         f"vos://{AUTHORITY}/src",
-        data_child(f"vos://{AUTHORITY}/src/a", 1)
-        + data_child(f"vos://{AUTHORITY}/src/b", 0),
+        data_child(f"vos://{AUTHORITY}/src/a", 1) + data_child(f"vos://{AUTHORITY}/src/b", 0),
     )
     files = {"/src/a": b"a"}
     _created, deleted = _install_percent_mutation_routes(
@@ -220,12 +207,7 @@ def test_recursive_move_keeps_source_when_copy_omits_one_child(
     router: respx.Router,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sim = (
-        VOSpaceSim()
-        .add_container("/src")
-        .add_file("/src/a", b"a")
-        .add_file("/src/b", b"b")
-    )
+    sim = VOSpaceSim().add_container("/src").add_file("/src/a", b"a").add_file("/src/b", b"b")
     byte_op = sim._byte_op
 
     def incomplete_copy(request: httpx.Request) -> httpx.Response:

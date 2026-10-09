@@ -7,8 +7,9 @@ from contextlib import asynccontextmanager
 from types import MappingProxyType
 
 from fsspec.asyn import AsyncFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 
 class _InfoFileSystem(AsyncFileSystem):
@@ -23,9 +24,7 @@ class _InfoFileSystem(AsyncFileSystem):
         return {
             "name": path,
             "type": "file",
-            "properties": MappingProxyType(
-                {"z": (2, 1), "a": {"charlie", "alpha", "bravo"}}
-            ),
+            "properties": MappingProxyType({"z": (2, 1), "a": {"charlie", "alpha", "bravo"}}),
             "keyed": MappingProxyType(
                 {
                     frozenset({"bravo", "alpha"}): "frozenset key",

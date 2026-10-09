@@ -84,9 +84,7 @@ async def _remove_empty_directory(
     if not callable(rmdir):
         return _RmdirFailure(
             operand,
-            backend_error=NotImplementedError(
-                f"{type(filesystem).__name__} lacks async _rmdir"
-            ),
+            backend_error=NotImplementedError(f"{type(filesystem).__name__} lacks async _rmdir"),
         )
 
     mutation_error: Exception | None = None

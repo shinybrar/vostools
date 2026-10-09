@@ -33,9 +33,7 @@ def _mock_put(router: respx.Router, response: httpx.Response) -> None:
     mock_capabilities(router)
     router.get(NODES_URL).mock(return_value=httpx.Response(200, content=ROOT_CONTAINER))
     router.post(SYNC_URL).mock(
-        return_value=httpx.Response(
-            303, headers={"Location": "https://staging.canfar.net/arc/d"}
-        ),
+        return_value=httpx.Response(303, headers={"Location": "https://staging.canfar.net/arc/d"}),
     )
     router.get(url="https://staging.canfar.net/arc/d").mock(
         return_value=httpx.Response(200, content=transfer_details(_ENDPOINT)),
@@ -115,9 +113,7 @@ async def test_direct_byte_endpoint_303_is_put_once_without_credentials(
     mock_capabilities(router)
     router.get(NODES_URL).mock(return_value=httpx.Response(200, content=ROOT_CONTAINER))
     endpoint = "https://staging.canfar.net/arc/files/preauth:TESTTOKEN/out.bin"
-    router.post(SYNC_URL).mock(
-        return_value=httpx.Response(303, headers={"Location": endpoint})
-    )
+    router.post(SYNC_URL).mock(return_value=httpx.Response(303, headers={"Location": endpoint}))
     seen: list[tuple[str | None, bytes]] = []
 
     def byte_put(request: httpx.Request) -> httpx.Response:
@@ -177,9 +173,7 @@ def test_open_w_text(router: respx.Router) -> None:
     fs = make_fs(router)
     with fs.open("/t.txt", "w", encoding="utf-8") as handle:
         handle.write("héllo")
-    put_bodies = [
-        call.request.content for call in router.calls if call.request.method == "PUT"
-    ]
+    put_bodies = [call.request.content for call in router.calls if call.request.method == "PUT"]
     assert put_bodies == ["héllo".encode()]
     fs.close()
 
@@ -341,10 +335,7 @@ def test_pipe_mapping_rejects_file_parent_before_data_writes(
             batch_size=2,
         )
 
-    assert not any(
-        call.request.url.path in {"/arc/synctrans", "/arc/files"}
-        for call in router.calls
-    )
+    assert not any(call.request.url.path in {"/arc/synctrans", "/arc/files"} for call in router.calls)
     fs.close()
 
 
@@ -398,9 +389,7 @@ def test_recursive_put_preserves_literal_percent_in_remapped_containers(
         if request.method == "GET":
             if "/destA" in str(request.url):
                 path = request.url.path.split("/nodes", 1)[1]
-                return httpx.Response(
-                    200, content=container_xml(f"vos://{AUTHORITY}{path}")
-                )
+                return httpx.Response(200, content=container_xml(f"vos://{AUTHORITY}{path}"))
             return httpx.Response(404)
         return httpx.Response(201)
 

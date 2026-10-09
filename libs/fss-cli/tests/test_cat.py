@@ -228,9 +228,7 @@ def test_cat_reports_temporary_creation_failure(monkeypatch) -> None:
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b""
-    assert result.stderr == (
-        "cat: memory:/blob: staging failure (OSError): disk\\\\\\x00\\x0d\\x0afull\n"
-    )
+    assert result.stderr == ("cat: memory:/blob: staging failure (OSError): disk\\\\\\x00\\x0d\\x0afull\n")
     assert "secret" not in result.stderr
     assert [event[0] for event in source.events] == ["factory", "enter", "info", "exit"]
 
@@ -335,9 +333,7 @@ def test_cat_unknown_name_lists_known_sources() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
-    assert result.stderr == (
-        "cat: zeta:/file: unknown filesystem (known: alpha, beta)\n"
-    )
+    assert result.stderr == ("cat: zeta:/file: unknown filesystem (known: alpha, beta)\n")
 
 
 def test_cat_stops_acquisition_after_a_source_factory_failure() -> None:
@@ -360,9 +356,7 @@ def test_cat_stops_acquisition_after_a_source_factory_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b""
-    assert result.stderr == (
-        "cat: broken: source factory failure (ValueError): factory\\\\\\x00\\x0d\\x0a\n"
-    )
+    assert result.stderr == ("cat: broken: source factory failure (ValueError): factory\\\\\\x00\\x0d\\x0a\n")
     assert [event[0] for event in events] == ["factory", "enter", "exit"]
     exception_type, exception, traceback = first.exit_calls[0]
     assert exception_type is ValueError
@@ -388,9 +382,7 @@ def test_cat_rejects_an_incompatible_source_context_manager(
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b""
-    assert result.stderr == (
-        "cat: broken: source factory returned incompatible async context manager\n"
-    )
+    assert result.stderr == ("cat: broken: source factory returned incompatible async context manager\n")
 
 
 def test_cat_stops_after_source_entry_failure_without_exiting_failed_entry() -> None:
@@ -422,9 +414,7 @@ def test_cat_stops_after_source_entry_failure_without_exiting_failed_entry() -> 
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b""
-    assert result.stderr == (
-        "cat: broken: source entry failure (LookupError): entry\\\\\\x00\\x0d\\x0a\n"
-    )
+    assert result.stderr == ("cat: broken: source entry failure (LookupError): entry\\\\\\x00\\x0d\\x0a\n")
     assert [event[0] for event in events] == [
         "factory",
         "enter",
@@ -468,9 +458,7 @@ def test_cat_exits_a_source_that_yields_an_incompatible_filesystem(
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b""
-    assert result.stderr == (
-        "cat: broken: source yielded incompatible async filesystem\n"
-    )
+    assert result.stderr == ("cat: broken: source yielded incompatible async filesystem\n")
     assert [event[0] for event in events] == ["factory", "enter", "exit"]
     assert events[1][-1] == events[2][-1]
 
@@ -594,9 +582,7 @@ def test_cat_continues_after_temporary_open_failure(monkeypatch) -> None:
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b"OK"
-    assert result.stderr == (
-        "cat: memory:/bad: staging failure (OSError): open-denied\n"
-    )
+    assert result.stderr == ("cat: memory:/bad: staging failure (OSError): open-denied\n")
     assert "secret" not in result.stderr
 
 
@@ -634,9 +620,7 @@ def test_cat_continues_after_temporary_read_failure(monkeypatch) -> None:
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b"OK"
-    assert result.stderr == (
-        "cat: memory:/bad: staging failure (OSError): read-denied\n"
-    )
+    assert result.stderr == ("cat: memory:/bad: staging failure (OSError): read-denied\n")
     assert "secret" not in result.stderr
 
 
@@ -681,9 +665,7 @@ def test_cat_continues_after_temporary_close_failure(monkeypatch) -> None:
     assert result.exit_code == 1
     # Failed staging operand emits zero bytes (per-operand atomicity).
     assert result.stdout_bytes == b"OK"
-    assert result.stderr == (
-        "cat: memory:/bad: staging failure (OSError): close-denied\n"
-    )
+    assert result.stderr == ("cat: memory:/bad: staging failure (OSError): close-denied\n")
 
 
 def test_cat_stops_after_delayed_temporary_read_failure_emitting_partial(
@@ -730,13 +712,9 @@ def test_cat_stops_after_delayed_temporary_read_failure_emitting_partial(
     # Streaming forwards bytes as they are read: a staging read error after
     # output is an output failure that stops later operands.
     assert result.stdout_bytes == b"partial"
-    assert result.stderr == (
-        "cat: output: output failure (OSError): late-read-denied\n"
-    )
+    assert result.stderr == ("cat: output: output failure (OSError): late-read-denied\n")
     assert "secret" not in result.stdout_bytes.decode("latin1")
-    assert not any(
-        event[0] == "get_file" and event[2] == "/ok" for event in source.events
-    )
+    assert not any(event[0] == "get_file" and event[2] == "/ok" for event in source.events)
 
 
 def test_cat_stops_when_single_handle_read_fails_after_first_output(
@@ -782,9 +760,7 @@ def test_cat_stops_when_single_handle_read_fails_after_first_output(
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b"accepted"
-    assert result.stderr == (
-        "cat: output: output failure (OSError): post-output-read-denied\n"
-    )
+    assert result.stderr == ("cat: output: output failure (OSError): post-output-read-denied\n")
     assert open_calls == 1
     assert [event[0] for event in source.events].count("get_file") == 1
 
@@ -847,9 +823,7 @@ def test_cat_finally_closes_descriptor_after_two_os_close_failures(monkeypatch) 
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b""
-    assert result.stderr == (
-        "cat: memory:/blob: staging failure (OSError): close-denied\n"
-    )
+    assert result.stderr == ("cat: memory:/blob: staging failure (OSError): close-denied\n")
     assert len(temps) == 1
     assert not Path(temps[0]).exists()
     assert attempts >= 3
@@ -1142,10 +1116,7 @@ def test_cat_stdin_untouched_when_later_source_factory_fails(
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b""
-    assert result.stderr == (
-        f"cat: {broken_name}: source factory failure (ValueError): "
-        "factory\\\\\\x00\\x0d\\x0a\n"
-    )
+    assert result.stderr == (f"cat: {broken_name}: source factory failure (ValueError): factory\\\\\\x00\\x0d\\x0a\n")
     assert [event[0] for event in events] == ["factory", "enter", "exit"]
     exception_type, exception, traceback = first.exit_calls[0]
     assert exception_type is ValueError
@@ -1205,10 +1176,7 @@ def test_cat_stdin_untouched_when_later_source_entry_fails(
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b""
-    assert result.stderr == (
-        f"cat: {broken_name}: source entry failure (LookupError): "
-        "entry\\\\\\x00\\x0d\\x0a\n"
-    )
+    assert result.stderr == (f"cat: {broken_name}: source entry failure (LookupError): entry\\\\\\x00\\x0d\\x0a\n")
     assert [event[0] for event in events] == [
         "factory",
         "enter",
@@ -1293,12 +1261,8 @@ def test_cat_stops_on_stdout_failure_during_stdin_at_each_position(
     assert source.events[0][0] == "factory"
     assert source.events[1][0] == "enter"
     assert source.events[-1][0] == "exit"
-    assert not any(
-        event[0] == "get_file" and event[2] == "/right" for event in source.events
-    )
-    assert not any(
-        event[0] == "get_file" and event[2] == "/later" for event in source.events
-    )
+    assert not any(event[0] == "get_file" and event[2] == "/right" for event in source.events)
+    assert not any(event[0] == "get_file" and event[2] == "/later" for event in source.events)
     assert all(not Path(path).exists() for path in temps)
 
 
@@ -1321,9 +1285,7 @@ def test_cat_continues_after_missing_file_before_and_after_stdin(monkeypatch) ->
 
     assert result.exit_code == 1
     assert result.stdout_bytes == b"SOK"
-    assert result.stderr == (
-        "cat: memory:/missing: not found\ncat: memory:/missing: not found\n"
-    )
+    assert result.stderr == ("cat: memory:/missing: not found\ncat: memory:/missing: not found\n")
 
 
 def test_cat_continues_after_stdin_read_failure(monkeypatch) -> None:

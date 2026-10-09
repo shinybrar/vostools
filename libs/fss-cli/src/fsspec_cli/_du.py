@@ -43,11 +43,7 @@ def _file_sizes(rows: list[_ListedRow]) -> dict[str, int] | None:
             for info in row.files.values():
                 path = info.get("name")
                 size = info.get("size")
-                if (
-                    type(path) is not str
-                    or not valid_display_text(path)
-                    or not _valid_size(size)
-                ):
+                if type(path) is not str or not valid_display_text(path) or not _valid_size(size):
                     return None
                 sizes[path] = size
     except Exception:  # noqa: BLE001 - fail closed on hostile mapping behavior.

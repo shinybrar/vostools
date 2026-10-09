@@ -81,10 +81,7 @@ CAPABILITIES = f"""<?xml version="1.0" encoding="UTF-8"?>
 """.encode()
 
 
-_XMLNS = (
-    'xmlns:vos="http://www.ivoa.net/xml/VOSpace/v2.0" '
-    'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
-)
+_XMLNS = 'xmlns:vos="http://www.ivoa.net/xml/VOSpace/v2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"'
 
 
 def data_child(uri: str, length: int | None = None) -> str:
@@ -102,10 +99,7 @@ def data_child(uri: str, length: int | None = None) -> str:
 
 def container_child(uri: str) -> str:
     """Return a ContainerNode child element for embedding in a listing."""
-    return (
-        f'<vos:node xsi:type="vos:ContainerNode" uri="{uri}">'
-        "<vos:properties/></vos:node>"
-    )
+    return f'<vos:node xsi:type="vos:ContainerNode" uri="{uri}"><vos:properties/></vos:node>'
 
 
 def data_xml(uri: str, length: int | None = None) -> bytes:
@@ -152,9 +146,7 @@ def make_sim_fs(
 
 def mock_capabilities(router: respx.Router) -> None:
     """Register the standard capabilities response on the router."""
-    router.get("/capabilities").mock(
-        return_value=httpx.Response(200, content=CAPABILITIES)
-    )
+    router.get("/capabilities").mock(return_value=httpx.Response(200, content=CAPABILITIES))
 
 
 def transfer_details(endpoint: str) -> bytes:
@@ -175,9 +167,7 @@ def target_path(content: bytes | None) -> str:
     return match.group(1).strip()[len(prefix) :] or "/"
 
 
-def data_node_response(
-    request: httpx.Request, files: dict[str, bytes]
-) -> httpx.Response:
+def data_node_response(request: httpx.Request, files: dict[str, bytes]) -> httpx.Response:
     """Return root or DataNode metadata for the transfer test helper."""
     raw_path = request.url.raw_path.split(b"?", 1)[0].decode()
     suffix = unquote(raw_path.removeprefix(urlsplit(NODES_URL).path))
@@ -222,9 +212,7 @@ def mock_transfers(
         endpoint = f"{BASE_URL}/files?p={quote(path)}"
         return httpx.Response(200, content=transfer_details(endpoint))
 
-    router.get(url__regex=rf"^{re.escape(BASE_URL)}/details").mock(
-        side_effect=details_get
-    )
+    router.get(url__regex=rf"^{re.escape(BASE_URL)}/details").mock(side_effect=details_get)
 
     def byte_op(request: httpx.Request) -> httpx.Response:
         path = request.url.params["p"]

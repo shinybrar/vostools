@@ -26,15 +26,11 @@ def _install_percent_mutation_routes(
         if request.method == "GET":
             document = listings.get(internal)
             if document is None and (internal in files or internal in data_nodes):
-                document = data_xml(
-                    f"vos://{AUTHORITY}{encoded}", len(files.get(internal, b""))
-                )
+                document = data_xml(f"vos://{AUTHORITY}{encoded}", len(files.get(internal, b"")))
             if document is not None:
                 return httpx.Response(200, content=document)
             if encoded in created or "100A" in encoded:
-                return httpx.Response(
-                    200, content=container_xml(f"vos://{AUTHORITY}{encoded}")
-                )
+                return httpx.Response(200, content=container_xml(f"vos://{AUTHORITY}{encoded}"))
             return httpx.Response(404)
         if request.method == "PUT":
             created.add(encoded)

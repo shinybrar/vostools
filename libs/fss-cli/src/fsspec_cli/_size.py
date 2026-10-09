@@ -70,10 +70,7 @@ async def _measure_many(
                 raise _CommandFailureError(operand)
             sizes[index] = size
 
-    return "".join(
-        f"{sizes[index]}\t{operand.spelling}\n"
-        for index, operand in enumerate(operands)
-    )
+    return "".join(f"{sizes[index]}\t{operand.spelling}\n" for index, operand in enumerate(operands))
 
 
 async def _run_size(

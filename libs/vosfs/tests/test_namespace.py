@@ -124,12 +124,8 @@ async def test_recursive_rm_rejects_non_immediate_listing_children(
     suffix = "" if parent == "/" else parent
     document = container_xml(f"vos://{AUTHORITY}{suffix}", data_child(child_uri, 1))
     mock_capabilities(router)
-    router.get(NODES_URL + suffix).mock(
-        return_value=httpx.Response(200, content=document)
-    )
-    deletes = router.delete(url__regex=rf"^{NODES_URL}").mock(
-        return_value=httpx.Response(200)
-    )
+    router.get(NODES_URL + suffix).mock(return_value=httpx.Response(200, content=document))
+    deletes = router.delete(url__regex=rf"^{NODES_URL}").mock(return_value=httpx.Response(200))
     fs = make_fs(router, asynchronous=True)
 
     with pytest.raises(OSError, match="recursive removal failed") as excinfo:
@@ -144,12 +140,7 @@ async def test_recursive_rm_rejects_non_immediate_listing_children(
 async def test_recursive_rm_reports_leaves_first_partial_completion(
     router: respx.Router,
 ) -> None:
-    sim = (
-        VOSpaceSim()
-        .add_container("/tree")
-        .add_file("/tree/a", b"a")
-        .add_file("/tree/b", b"b")
-    )
+    sim = VOSpaceSim().add_container("/tree").add_file("/tree/a", b"a").add_file("/tree/b", b"b")
     sim.delete_statuses["/tree/b"] = 500
     fs = make_sim_fs(router, sim)
 
@@ -207,9 +198,7 @@ async def test_incomplete_listing_refresh_evicts_stale_cached_entry(
         data_child(f"vos://{AUTHORITY}/tree/sub/escape", 1),
     )
     mock_capabilities(router)
-    router.get(f"{NODES_URL}/tree").mock(
-        return_value=httpx.Response(200, content=malformed)
-    )
+    router.get(f"{NODES_URL}/tree").mock(return_value=httpx.Response(200, content=malformed))
     fs = make_fs(router, asynchronous=True)
     complete = [{"name": "/tree/known", "type": "file", "size": 1}]
     fs.dircache["/tree"] = complete

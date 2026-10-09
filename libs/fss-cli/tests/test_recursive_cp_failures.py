@@ -595,9 +595,7 @@ def test_recursive_cp_drains_current_operation_on_cancellation(  # noqa: C901, P
             nonlocal ls_calls
             del self
             ls_calls += 1
-            if (phase == "listing" and ls_calls == 1) or (
-                phase == "source revalidation listing" and ls_calls == 2
-            ):
+            if (phase == "listing" and ls_calls == 1) or (phase == "source revalidation listing" and ls_calls == 2):
                 await cancel_then_resume()
             return await original_ls(path, detail, **kwargs)
 
@@ -635,21 +633,9 @@ def test_recursive_cp_drains_current_operation_on_cancellation(  # noqa: C901, P
             del self
             path_calls[path] = path_calls.get(path, 0) + 1
             should_cancel = (
-                (
-                    phase == "target info"
-                    and path == "/out/copy"
-                    and path_calls[path] == 1
-                )
-                or (
-                    phase == "destination preflight"
-                    and path == "/out/copy/docs/file"
-                    and path_calls[path] == 1
-                )
-                or (
-                    phase == "destination proof"
-                    and path == "/out/copy/file"
-                    and uploaded
-                )
+                (phase == "target info" and path == "/out/copy" and path_calls[path] == 1)
+                or (phase == "destination preflight" and path == "/out/copy/docs/file" and path_calls[path] == 1)
+                or (phase == "destination proof" and path == "/out/copy/file" and uploaded)
             )
             if should_cancel:
                 await cancel_then_resume()
@@ -753,8 +739,7 @@ def test_recursive_cp_classifies_final_source_listing_failure() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "cp: source:/docs: source revalidation failure; "
-        "destination residue may remain\n",
+        "cp: source:/docs: source revalidation failure; destination residue may remain\n",
     )
     assert destination_entries["/out/copy/file"] == b"x"
 
@@ -793,8 +778,7 @@ def test_recursive_cp_classifies_destination_proof_failure() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "cp: destination:/out/copy: verification failure; "
-        "destination residue may remain\n",
+        "cp: destination:/out/copy: verification failure; destination residue may remain\n",
     )
     assert destination_entries["/out/copy/file"] == b"x"
 
@@ -922,7 +906,7 @@ def test_recursive_cp_reports_first_failure_in_manifest_order() -> None:  # noqa
     # Only the first bound's worth of transfers ever started: none began
     # after the f05 failure was observed, and in-flight ones finished.
     assert started == [f"/docs/f{index:02d}" for index in range(16)]
-    assert sorted(
-        path for path in destination_entries if path.startswith("/out/copy/")
-    ) == [f"/out/copy/f{index:02d}" for index in range(16) if index not in {3, 5}]
+    assert sorted(path for path in destination_entries if path.startswith("/out/copy/")) == [
+        f"/out/copy/f{index:02d}" for index in range(16) if index not in {3, 5}
+    ]
     assert not [path for path in staged if Path(path).exists()]

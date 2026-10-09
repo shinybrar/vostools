@@ -120,9 +120,7 @@ async def test_find_respects_maxdepth_and_withdirs(router: respx.Router) -> None
 
 
 def _deny_listing(router: respx.Router, path: str) -> None:
-    router.get(url__regex=rf"^{re.escape(NODES_URL + path)}$").mock(
-        return_value=httpx.Response(403, text="denied")
-    )
+    router.get(url__regex=rf"^{re.escape(NODES_URL + path)}$").mock(return_value=httpx.Response(403, text="denied"))
 
 
 async def test_find_raise_applies_to_nested_containers(router: respx.Router) -> None:
@@ -309,17 +307,12 @@ async def test_recursive_copy_creates_each_container_once(
         for request in tracking.requests
         if request.method == "PUT" and str(request.url).startswith(NODES_URL)
     )
-    assert puts == Counter(
-        f"{_NODES_PATH}{path}"
-        for path in ["/copied", "/copied/d0", "/copied/d1", "/copied/d2"]
-    )
+    assert puts == Counter(f"{_NODES_PATH}{path}" for path in ["/copied", "/copied/d0", "/copied/d1", "/copied/d2"])
     assert sim.blobs["/copied/d1/f3"] == b"xxxx"
     await fs.aclose()
 
 
-async def test_recursive_get_needs_no_per_file_node_lookup(
-    router: respx.Router, tmp_path: object
-) -> None:
+async def test_recursive_get_needs_no_per_file_node_lookup(router: respx.Router, tmp_path: object) -> None:
     fs, tracking = await _fs(router, _tree())
 
     await fs._get("/w", f"{tmp_path}/out", recursive=True)
@@ -328,9 +321,7 @@ async def test_recursive_get_needs_no_per_file_node_lookup(
     await fs.aclose()
 
 
-async def test_recursive_get_rejects_external_link_from_listing(
-    router: respx.Router, tmp_path: object
-) -> None:
+async def test_recursive_get_rejects_external_link_from_listing(router: respx.Router, tmp_path: object) -> None:
     sim = VOSpaceSim().add_container("/d").add_link("/d/l", "vos://elsewhere/x")
     fs, _tracking = await _fs(router, sim)
 
@@ -422,9 +413,7 @@ async def test_run_bounded_cancels_children_when_cancelled() -> None:
             cancelled.append(index)
             raise
 
-    task = asyncio.ensure_future(
-        coordination.run_bounded([lambda i=i: worker(i) for i in range(3)], 2)
-    )
+    task = asyncio.ensure_future(coordination.run_bounded([lambda i=i: worker(i) for i in range(3)], 2))
     await started.wait()
     task.cancel()
     with pytest.raises(asyncio.CancelledError):

@@ -38,8 +38,7 @@ def _source_exception(
     rendered_class = _render_diagnostic_value(type(error).__name__)
     rendered_message = _render_diagnostic_value(str(error))
     typer.echo(
-        f"{prefix} {rendered_name}: source {stage} failure "
-        f"({rendered_class}): {rendered_message}",
+        f"{prefix} {rendered_name}: source {stage} failure ({rendered_class}): {rendered_message}",
         err=True,
     )
 
@@ -72,9 +71,7 @@ class _SourceInvocation:
     ) -> None:
         self._command = command
         self._sources = sources
-        self._entered: list[
-            tuple[str, AbstractAsyncContextManager[AbstractFileSystem]]
-        ] = []
+        self._entered: list[tuple[str, AbstractAsyncContextManager[AbstractFileSystem]]] = []
         self._failure_exc_info: _ExcInfo = _EMPTY_EXC_INFO
 
     async def acquire(
@@ -99,9 +96,7 @@ class _SourceInvocation:
                 prefix = _render_diagnostic_prefix(self._command)
                 rendered_name = _render_diagnostic_value(name)
                 typer.echo(
-                    f"{prefix} "
-                    f"{rendered_name}: source factory returned incompatible "
-                    "async context manager",
+                    f"{prefix} {rendered_name}: source factory returned incompatible async context manager",
                     err=True,
                 )
                 return None
@@ -122,8 +117,7 @@ class _SourceInvocation:
                 prefix = _render_diagnostic_prefix(self._command)
                 rendered_name = _render_diagnostic_value(name)
                 typer.echo(
-                    f"{prefix} {rendered_name}: source yielded incompatible "
-                    "async filesystem",
+                    f"{prefix} {rendered_name}: source yielded incompatible async filesystem",
                     err=True,
                 )
                 return None
@@ -135,15 +129,10 @@ class _SourceInvocation:
 
     async def close(self, active_exc_info: _ExcInfo) -> bool:
         """Exit every entered source and preserve control-flow precedence."""
-        exit_exc_info = (
-            active_exc_info
-            if active_exc_info[1] is not None
-            else self._failure_exc_info
-        )
+        exit_exc_info = active_exc_info if active_exc_info[1] is not None else self._failure_exc_info
         primary_control = (
             active_exc_info[1]
-            if active_exc_info[1] is not None
-            and not isinstance(active_exc_info[1], Exception)
+            if active_exc_info[1] is not None and not isinstance(active_exc_info[1], Exception)
             else None
         )
         cleanup_control = None
@@ -162,9 +151,7 @@ class _SourceInvocation:
         render_control = _render_exit_failures(
             self._command,
             exit_failures,
-            preserve_control=(
-                primary_control is not None or cleanup_control is not None
-            ),
+            preserve_control=(primary_control is not None or cleanup_control is not None),
         )
 
         if primary_control is None:
@@ -182,9 +169,7 @@ class _SourceInvocation:
         exception is propagating, or the live one is an ordinary ``Exception``.
         """
         active_exc_info: _ExcInfo = sys.exc_info()
-        if command_error is not None and (
-            active_exc_info[1] is None or isinstance(active_exc_info[1], Exception)
-        ):
+        if command_error is not None and (active_exc_info[1] is None or isinstance(active_exc_info[1], Exception)):
             active_exc_info = (
                 type(command_error),
                 command_error,

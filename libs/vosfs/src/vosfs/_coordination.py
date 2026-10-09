@@ -359,10 +359,7 @@ def canonical_info(info: dict[str, Any]) -> dict[str, Any]:
 
 def remap(source_paths: list[str], destination: str) -> list[str]:
     """Map canonical source paths beneath one canonical destination."""
-    return [
-        canonical_path(path)
-        for path in other_paths(source_paths, normalize_hook_path(destination))
-    ]
+    return [canonical_path(path) for path in other_paths(source_paths, normalize_hook_path(destination))]
 
 
 class FsspecAdapter:

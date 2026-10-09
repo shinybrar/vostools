@@ -244,9 +244,7 @@ def test_rmdir_reports_unknown_names_with_locale_sorted_known_names() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
-    assert result.stderr == (
-        "rmdir: other:/docs/empty: unknown filesystem (known: alpha, zeta)\n"
-    )
+    assert result.stderr == ("rmdir: other:/docs/empty: unknown filesystem (known: alpha, zeta)\n")
 
 
 @pytest.mark.parametrize(
@@ -413,9 +411,7 @@ def test_rmdir_treats_mutation_exception_with_proven_absence_as_success() -> Non
     assert result.stderr == ""
 
 
-def test_rmdir_reports_uncertain_state_when_mutation_and_post_check_are_ambiguous() -> (
-    None
-):
+def test_rmdir_reports_uncertain_state_when_mutation_and_post_check_are_ambiguous() -> None:
     events: list[tuple[object, ...]] = []
 
     class _UncertainAfterError(_RecordingSource):
@@ -533,9 +529,7 @@ class _ControlFlow(BaseException):
     [asyncio.CancelledError(), _ControlFlow("stop")],
 )
 def test_rmdir_preserves_control_flow_unchanged(control: BaseException) -> None:
-    source = _RecordingSource(
-        [], info_result={"type": "directory"}, rmdir_error=control
-    )
+    source = _RecordingSource([], info_result={"type": "directory"}, rmdir_error=control)
 
     with pytest.raises(type(control)) as caught:
         _invoke("rmdir", ["memory:/docs/empty"], sources={"memory": source})
@@ -600,20 +594,14 @@ def test_rmdir_stops_acquisition_after_a_source_factory_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "rmdir: broken: source factory failure (ValueError): factory\n"
-    )
+    assert result.stderr == ("rmdir: broken: source factory failure (ValueError): factory\n")
     assert [event[0] for event in events] == ["factory", "enter", "exit"]
 
 
 def test_rmdir_reports_source_exit_failures_in_reverse_order() -> None:
     events: list[tuple[object, ...]] = []
-    alpha = _RecordingSource(
-        events, info_result={"type": "directory"}, exit_error=OSError("alpha exit")
-    )
-    beta = _RecordingSource(
-        events, info_result={"type": "directory"}, exit_error=RuntimeError("beta exit")
-    )
+    alpha = _RecordingSource(events, info_result={"type": "directory"}, exit_error=OSError("alpha exit"))
+    beta = _RecordingSource(events, info_result={"type": "directory"}, exit_error=RuntimeError("beta exit"))
 
     result = _invoke(
         "rmdir",
@@ -629,9 +617,7 @@ def test_rmdir_reports_source_exit_failures_in_reverse_order() -> None:
     )
 
 
-def test_rmdir_accepts_hidden_directory_paths_that_are_not_final_dot_components() -> (
-    None
-):
+def test_rmdir_accepts_hidden_directory_paths_that_are_not_final_dot_components() -> None:
     events: list[tuple[object, ...]] = []
     source = _RecordingSource(events, info_result={"type": "directory"})
 

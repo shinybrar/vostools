@@ -145,10 +145,7 @@ async def execute(
     completed, failed = await verify_destinations(filesystem, move_plan)
     if failed:
         filesystem._invalidate(move_plan.destination)
-        msg = (
-            f"move copy is incomplete ({len(completed)} completed, "
-            f"{len(failed)} failed); source is kept"
-        )
+        msg = f"move copy is incomplete ({len(completed)} completed, {len(failed)} failed); source is kept"
         raise errors.VOSpaceError(msg, completed=completed, failed=failed)
     await remove_sources(
         filesystem,
@@ -201,9 +198,7 @@ async def verify_destinations(
     failed: list[str] = []
     for entry, copied in zip(move_plan.entries, infos, strict=True):
         type_matches = copied is not None and copied["type"] == entry.kind
-        size_matches = type_matches and (
-            entry.kind == "directory" or copied["size"] == entry.size
-        )
+        size_matches = type_matches and (entry.kind == "directory" or copied["size"] == entry.size)
         if size_matches:
             completed.append(entry.destination)
         else:
@@ -244,18 +239,11 @@ async def remove_sources(
 
     for depth in depths:
         await coordination.run_bounded(
-            [
-                functools.partial(remove, entry.source)
-                for entry in entries
-                if entry.source.count("/") == depth
-            ],
+            [functools.partial(remove, entry.source) for entry in entries if entry.source.count("/") == depth],
             limit,
         )
         if failed:
-            msg = (
-                f"move source deletion failed ({len(completed)} completed, "
-                f"{len(failed)} failed)"
-            )
+            msg = f"move source deletion failed ({len(completed)} completed, {len(failed)} failed)"
             raise errors.VOSpaceError(
                 msg,
                 completed=completed,

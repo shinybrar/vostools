@@ -5,8 +5,9 @@ from __future__ import annotations
 from typing import NoReturn
 
 import pytest
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 from ._ansi import strip_ansi
 from ._support import _source_must_not_run
@@ -98,6 +99,4 @@ def test_cp_option_terminator_leaves_following_token_as_an_operand() -> None:
     )
 
     assert (result.exit_code, result.stdout_bytes) == (2, b"")
-    assert strip_ansi(result.stderr) == (
-        "cp: --help: invalid mapped filesystem operand\n"
-    )
+    assert strip_ansi(result.stderr) == ("cp: --help: invalid mapped filesystem operand\n")

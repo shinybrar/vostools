@@ -7,6 +7,7 @@ import math
 
 import pytest
 import typer
+
 from fsspec_cli._stat import _format_mtime, _write_line
 
 from ._support import _invoke, _RecordingSource, _source_must_not_run
@@ -93,9 +94,7 @@ def test_stat_renders_one_local_rich_file_line() -> None:
     assert result.exit_code == 0
     assert result.stderr == ""
     assert result.stdout == _GOLDEN_FILE
-    assert [(event[0], event[2]) for event in events if event[0] == "info"] == [
-        ("info", "/stat-file")
-    ]
+    assert [(event[0], event[2]) for event in events if event[0] == "info"] == [("info", "/stat-file")]
     assert not any(event[0] == "ls" for event in events)
 
 
@@ -269,9 +268,7 @@ def test_stat_escapes_backend_message_control_characters() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "stat: memory:/stat-x: backend failure (OSError): bad\\\\\\x00\\x0d\\x0apath\n"
-    )
+    assert result.stderr == ("stat: memory:/stat-x: backend failure (OSError): bad\\\\\\x00\\x0d\\x0apath\n")
 
 
 def test_stat_acquires_distinct_sources_before_reuse() -> None:

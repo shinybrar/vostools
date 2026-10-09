@@ -13,8 +13,9 @@ import pytest
 from fsspec import AbstractFileSystem
 from fsspec.asyn import AsyncFileSystem
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -425,9 +426,7 @@ def test_listing_capacity_precedes_reading_oversized_listing_entries() -> None:
         "",
         "cp: source:/dataset: source tree exceeds 10000 entries\n",
     )
-    assert not [
-        event for event in destination_events if event[0] in {"mkdir", "put_file"}
-    ]
+    assert not [event for event in destination_events if event[0] in {"mkdir", "put_file"}]
 
 
 def test_duplicate_listing_entry_precedes_deeper_listing_failure() -> None:
@@ -455,9 +454,7 @@ def test_duplicate_listing_entry_precedes_deeper_listing_failure() -> None:
         "cp: source:/dataset: incompatible result\n",
     )
     # The malformed listing stops the walk before the next depth is listed.
-    assert [event for event in source_events if event[0] == "ls"] == [
-        ("ls", "/dataset", True)
-    ]
+    assert [event for event in source_events if event[0] == "ls"] == [("ls", "/dataset", True)]
 
 
 @pytest.mark.parametrize(
@@ -503,9 +500,7 @@ def test_backend_neutral_read_phase_failures_are_stable_and_pre_mutation(
         "",
         f"cp: source:/dataset: {diagnostic}\n",
     )
-    assert not [
-        event for event in destination_events if event[0] in {"mkdir", "put_file"}
-    ]
+    assert not [event for event in destination_events if event[0] in {"mkdir", "put_file"}]
     assert "/landing/copy" not in destination_entries
 
 
@@ -515,23 +510,14 @@ def test_recursive_copy_production_has_no_backend_dispatch_or_sync_facades() -> 
     source = Path(_recursive_cp.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     imported_modules = {
-        node.module
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom) and node.module is not None
+        node.module for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.module is not None
     }
     imported_modules.update(
-        alias.name
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Import)
-        for alias in node.names
+        alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names
     )
-    attributes = {
-        node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)
-    }
+    attributes = {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
     called_attributes = {
-        node.func.attr
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        node.func.attr for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
     }
 
     assert not {
@@ -564,8 +550,6 @@ def test_recursive_copy_production_has_no_backend_dispatch_or_sync_facades() -> 
         "destination_filesystem",
     ]
     assert runner.__dataclass_params__.frozen is True
-    assert [
-        name
-        for name, member in runner.__dict__.items()
-        if callable(member) and not name.startswith("_")
-    ] == ["run"]
+    assert [name for name, member in runner.__dict__.items() if callable(member) and not name.startswith("_")] == [
+        "run"
+    ]

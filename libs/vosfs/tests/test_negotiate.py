@@ -34,11 +34,7 @@ ROOT = (
 
 
 def _details(endpoint: str, *, security_method: str | None = None) -> bytes:
-    security = (
-        f'<vos:securityMethod standardID="{security_method}"/>'
-        if security_method
-        else ""
-    )
+    security = f'<vos:securityMethod standardID="{security_method}"/>' if security_method else ""
     return f"""<vos:transfer {VOS} version="2.1">
       <vos:target>vos://{AUTHORITY}/file.txt</vos:target>
       <vos:direction>pullFromVoSpace</vos:direction>
@@ -58,9 +54,7 @@ def test_parse_transfer_details_anonymous() -> None:
 
 
 def test_parse_transfer_details_with_security_method() -> None:
-    protocols = parse_transfer_details(
-        _details("https://h.test/f", security_method=TOKEN_METHOD)
-    )
+    protocols = parse_transfer_details(_details("https://h.test/f", security_method=TOKEN_METHOD))
     assert protocols[0].security_method == TOKEN_METHOD
 
 
@@ -93,18 +87,14 @@ def test_choose_protocol_no_match_raises() -> None:
         ("http://h/x", True),
     ],
 )
-def test_validate_redirect_rejections(
-    location: str | None, sending_bearer: bool
-) -> None:
+def test_validate_redirect_rejections(location: str | None, sending_bearer: bool) -> None:
     with pytest.raises(OSError, match=r"redirect|Location|bearer"):
         validate_redirect(location, base=SYNC_URL, sending_bearer=sending_bearer)
 
 
 def test_validate_redirect_resolves_relative() -> None:
     # An absolute-path Location resolves against the host root, per URL rules.
-    resolved = validate_redirect(
-        "/synctrans/results", base=SYNC_URL, sending_bearer=False
-    )
+    resolved = validate_redirect("/synctrans/results", base=SYNC_URL, sending_bearer=False)
     assert resolved == "https://staging.canfar.net/synctrans/results"
 
 
@@ -119,9 +109,7 @@ def test_parse_transfer_details_skips_protocol_without_endpoint() -> None:
 # --- negotiation through the filesystem -----------------------------------------
 
 
-def _mock_negotiation(
-    router: respx.Router, endpoint: str, *, security_method: str | None = None
-) -> None:
+def _mock_negotiation(router: respx.Router, endpoint: str, *, security_method: str | None = None) -> None:
     mock_capabilities(router)
     router.get(NODES_URL).mock(return_value=httpx.Response(200, content=ROOT))
     details_url = f"{BASE_URL}/synctrans/results"
@@ -129,9 +117,7 @@ def _mock_negotiation(
         return_value=httpx.Response(303, headers={"Location": details_url}),
     )
     router.get(details_url).mock(
-        return_value=httpx.Response(
-            200, content=_details(endpoint, security_method=security_method)
-        ),
+        return_value=httpx.Response(200, content=_details(endpoint, security_method=security_method)),
     )
 
 
@@ -181,9 +167,7 @@ async def test_negotiate_follows_transfer_result_redirect(
         return_value=httpx.Response(303, headers={"Location": result_url}),
     )
     router.get(result_url).mock(
-        return_value=httpx.Response(
-            200, content=_details(endpoint, security_method=CERTIFICATE_METHOD)
-        ),
+        return_value=httpx.Response(200, content=_details(endpoint, security_method=CERTIFICATE_METHOD)),
     )
     fs = make_fs(router, asynchronous=True, certfile="/tmp/proxy.pem")  # noqa: S108
     negotiated = await _transfer.negotiate_endpoint(
@@ -205,9 +189,7 @@ async def test_negotiate_rejects_redirect_loop(router: respx.Router) -> None:
     )
     fs = make_fs(router, asynchronous=True)
     with pytest.raises(OSError, match="redirect loop"):
-        await _transfer.negotiate_endpoint(
-            fs, "/file.txt", direction=DIRECTION_PULL, protocol_uri=PROTOCOL_HTTPS_GET
-        )
+        await _transfer.negotiate_endpoint(fs, "/file.txt", direction=DIRECTION_PULL, protocol_uri=PROTOCOL_HTTPS_GET)
     await fs.aclose()
 
 
@@ -226,9 +208,7 @@ async def test_negotiate_rejects_more_than_five_redirects(
         )
     fs = make_fs(router, asynchronous=True)
     with pytest.raises(OSError, match="more than five"):
-        await _transfer.negotiate_endpoint(
-            fs, "/file.txt", direction=DIRECTION_PULL, protocol_uri=PROTOCOL_HTTPS_GET
-        )
+        await _transfer.negotiate_endpoint(fs, "/file.txt", direction=DIRECTION_PULL, protocol_uri=PROTOCOL_HTTPS_GET)
     await fs.aclose()
 
 
@@ -238,9 +218,7 @@ async def test_negotiate_non_303_maps_error(router: respx.Router) -> None:
     router.post(SYNC_URL).mock(return_value=httpx.Response(400, text="bad transfer"))
     fs = make_fs(router, asynchronous=True)
     with pytest.raises(OSError, match="400"):
-        await _transfer.negotiate_endpoint(
-            fs, "/file.txt", direction=DIRECTION_PULL, protocol_uri=PROTOCOL_HTTPS_GET
-        )
+        await _transfer.negotiate_endpoint(fs, "/file.txt", direction=DIRECTION_PULL, protocol_uri=PROTOCOL_HTTPS_GET)
     await fs.aclose()
 
 
@@ -319,9 +297,7 @@ async def test_bearer_not_leaked_to_cross_origin_redirect(router: respx.Router) 
 
     router.get(cross).side_effect = capture
     fs = make_fs(router, asynchronous=True, token="secret-token")
-    await _transfer.negotiate_endpoint(
-        fs, "/file.txt", direction=DIRECTION_PULL, protocol_uri=PROTOCOL_HTTPS_GET
-    )
+    await _transfer.negotiate_endpoint(fs, "/file.txt", direction=DIRECTION_PULL, protocol_uri=PROTOCOL_HTTPS_GET)
     # The bearer reaches the same-origin POST but never the cross-origin details GET.
     assert seen["auth"] is None
     await fs.aclose()

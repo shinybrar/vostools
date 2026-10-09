@@ -132,9 +132,7 @@ def test_du_reports_a_file_operand_from_its_own_listing_entry() -> None:
     result = _invoke("du", ["memory:/file"], sources={"memory": source})
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "3\t/file\n", "")
-    assert [event for event in _events(events) if event[0] == "ls"] == [
-        ("ls", "/file", True)
-    ]
+    assert [event for event in _events(events) if event[0] == "ls"] == [("ls", "/file", True)]
 
 
 @pytest.mark.parametrize(
@@ -311,9 +309,7 @@ def test_du_reports_backend_failures_and_passes_them_to_cleanup(
 
 
 def test_du_validates_the_complete_listing_before_output() -> None:
-    _events_list, source = _source(
-        {"/docs": [_file("/docs/good", 1), _file("/docs/bad", -1)]}
-    )
+    _events_list, source = _source({"/docs": [_file("/docs/good", 1), _file("/docs/bad", -1)]})
 
     result = _invoke("du", ["memory:/docs"], sources={"memory": source})
 

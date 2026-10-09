@@ -10,8 +10,9 @@ from typing import NoReturn
 
 import pytest
 import typer
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 from ._support import (
     _invoke,
@@ -510,9 +511,7 @@ def test_cp_reuses_configured_name_for_mixed_multi_source_sequence() -> None:
     assert shared.file_contents["/target/third.txt"] == b"third"
 
 
-def test_cp_keeps_verified_target_after_later_multi_source_verification_failure() -> (
-    None
-):
+def test_cp_keeps_verified_target_after_later_multi_source_verification_failure() -> None:
     first = _file_source(
         file_contents={"/docs/first.txt": b"first"},
         directories={"/", "/docs"},
@@ -520,19 +519,13 @@ def test_cp_keeps_verified_target_after_later_multi_source_verification_failure(
     second = _file_source(
         file_contents={"/docs/second.txt": b"second"},
         directories={"/", "/docs"},
-        info_by_path={
-            "/docs/second.txt": MappingProxyType(
-                {"type": "file", "size": 6, "checksum": "source-token"}
-            )
-        },
+        info_by_path={"/docs/second.txt": MappingProxyType({"type": "file", "size": 6, "checksum": "source-token"})},
     )
     destination = _file_source(
         source_path="/other.txt",
         directories={"/", "/target"},
         post_info_by_path={
-            "/target/second.txt": MappingProxyType(
-                {"type": "file", "size": 6, "checksum": "destination-token"}
-            )
+            "/target/second.txt": MappingProxyType({"type": "file", "size": 6, "checksum": "destination-token"})
         },
     )
 
@@ -556,8 +549,7 @@ def test_cp_keeps_verified_target_after_later_multi_source_verification_failure(
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "cp: destination:/target: verification failure; "
-        "destination residue may remain\n",
+        "cp: destination:/target: verification failure; destination residue may remain\n",
     )
     assert destination.file_contents["/target/first.txt"] == b"first"
     assert destination.file_contents["/target/second.txt"] == b"wrong!"
@@ -600,12 +592,7 @@ def test_cp_cleans_later_cross_source_stage_on_multi_source_cancellation() -> No
     assert "/target/second.txt" not in destination.file_contents
     assert len(temporary_paths) == 1
     assert not Path(temporary_paths[0]).exists()
-    assert (
-        len(first.exit_calls)
-        == len(second.exit_calls)
-        == len(destination.exit_calls)
-        == 1
-    )
+    assert len(first.exit_calls) == len(second.exit_calls) == len(destination.exit_calls) == 1
 
 
 def test_cp_drains_current_download_before_staging_and_source_cleanup() -> None:
@@ -849,10 +836,7 @@ def test_cp_rejects_invalid_cross_source_destination_after_upload(
     )
 
     assert result.exit_code == 1
-    assert result.stderr == (
-        "cp: destination:/out/copy.txt: verification failure; "
-        "destination residue may remain\n"
-    )
+    assert result.stderr == ("cp: destination:/out/copy.txt: verification failure; destination residue may remain\n")
 
 
 def test_cp_appends_basename_when_destination_is_directory() -> None:
@@ -1153,10 +1137,7 @@ def test_cp_reports_truncated_destination_as_verification_failure() -> None:
     )
 
     assert result.exit_code == 1
-    assert result.stderr == (
-        "cp: memory:/docs/copy.txt: verification failure; "
-        "destination residue may remain\n"
-    )
+    assert result.stderr == ("cp: memory:/docs/copy.txt: verification failure; destination residue may remain\n")
 
 
 def test_cp_reports_copy_exception_as_uncertain_residue() -> None:
@@ -1170,10 +1151,7 @@ def test_cp_reports_copy_exception_as_uncertain_residue() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "cp: memory:/docs/copy.txt: uncertain mutation state; "
-        "destination residue may remain\n"
-    )
+    assert result.stderr == ("cp: memory:/docs/copy.txt: uncertain mutation state; destination residue may remain\n")
 
 
 def test_cp_never_deletes_source_on_failure() -> None:
@@ -1358,12 +1336,10 @@ def test_cp_accepts_matching_normalized_metadata_tokens() -> None:
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
     assert not [event for event in source.events if event[0] == "get_file"]
-    mutation_index = next(
-        index for index, event in enumerate(source.events) if event[0] == "cp_file"
-    )
-    assert [
-        event[:3] for event in source.events[mutation_index + 1 :] if event[0] == "info"
-    ] == [("info", 1, "/docs/copy.txt")]
+    mutation_index = next(index for index, event in enumerate(source.events) if event[0] == "cp_file")
+    assert [event[:3] for event in source.events[mutation_index + 1 :] if event[0] == "info"] == [
+        ("info", 1, "/docs/copy.txt")
+    ]
 
 
 def test_cp_rejects_when_any_shared_metadata_token_mismatches() -> None:
@@ -1400,8 +1376,7 @@ def test_cp_rejects_when_any_shared_metadata_token_mismatches() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "cp: memory:/docs/copy.txt: verification failure; "
-        "destination residue may remain\n",
+        "cp: memory:/docs/copy.txt: verification failure; destination residue may remain\n",
     )
     assert not [event for event in source.events if event[0] == "get_file"]
 
@@ -1415,9 +1390,7 @@ def test_cp_freezes_source_metadata_before_same_source_mutation() -> None:
     source = _file_source(
         info_by_path={"/docs/notes.txt": source_info},
         post_info_by_path={
-            "/docs/copy.txt": MappingProxyType(
-                {"type": "file", "size": 7, "checksum": "destination-token"}
-            )
+            "/docs/copy.txt": MappingProxyType({"type": "file", "size": 7, "checksum": "destination-token"})
         },
     )
 
@@ -1438,8 +1411,7 @@ def test_cp_freezes_source_metadata_before_same_source_mutation() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "cp: memory:/docs/copy.txt: verification failure; "
-        "destination residue may remain\n",
+        "cp: memory:/docs/copy.txt: verification failure; destination residue may remain\n",
     )
 
 
@@ -1455,9 +1427,7 @@ def test_cp_freezes_source_metadata_before_cross_source_mutation() -> None:
         parent="/out",
         directories={"/", "/out"},
         post_info_by_path={
-            "/out/copy.txt": MappingProxyType(
-                {"type": "file", "size": 7, "checksum": "destination-token"}
-            )
+            "/out/copy.txt": MappingProxyType({"type": "file", "size": 7, "checksum": "destination-token"})
         },
     )
 
@@ -1479,8 +1449,7 @@ def test_cp_freezes_source_metadata_before_cross_source_mutation() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "cp: destination:/out/copy.txt: verification failure; "
-        "destination residue may remain\n",
+        "cp: destination:/out/copy.txt: verification failure; destination residue may remain\n",
     )
     assert len(source.get_file_paths) == 1
     assert not [event for event in destination.events if event[0] == "get_file"]
@@ -1511,9 +1480,7 @@ def test_cp_ignores_str_and_bytes_subclass_tokens_after_mutation(
             }
         },
         post_info_by_path={
-            "/docs/copy.txt": MappingProxyType(
-                {"type": "file", "size": 7, "checksum": "destination-token"}
-            )
+            "/docs/copy.txt": MappingProxyType({"type": "file", "size": 7, "checksum": "destination-token"})
         },
     )
 
@@ -1530,9 +1497,7 @@ def test_cp_ignores_str_and_bytes_subclass_tokens_after_mutation(
 
 def test_cp_reports_post_copy_destination_type_mismatch() -> None:
     source = _file_source(
-        post_info_by_path={
-            "/docs/copy.txt": MappingProxyType({"type": "directory", "size": 0})
-        },
+        post_info_by_path={"/docs/copy.txt": MappingProxyType({"type": "directory", "size": 0})},
     )
 
     result = _invoke(
@@ -1542,10 +1507,7 @@ def test_cp_reports_post_copy_destination_type_mismatch() -> None:
     )
 
     assert result.exit_code == 1
-    assert result.stderr == (
-        "cp: memory:/docs/copy.txt: verification failure; "
-        "destination residue may remain\n"
-    )
+    assert result.stderr == ("cp: memory:/docs/copy.txt: verification failure; destination residue may remain\n")
 
 
 def test_cp_reports_post_copy_destination_info_failure() -> None:
@@ -1562,10 +1524,7 @@ def test_cp_reports_post_copy_destination_info_failure() -> None:
     )
 
     assert result.exit_code == 1
-    assert result.stderr == (
-        "cp: memory:/docs/copy.txt: verification failure; "
-        "destination residue may remain\n"
-    )
+    assert result.stderr == ("cp: memory:/docs/copy.txt: verification failure; destination residue may remain\n")
 
 
 def test_cp_reports_cross_source_temporary_cleanup_failure(monkeypatch) -> None:
@@ -1592,8 +1551,7 @@ def test_cp_reports_cross_source_temporary_cleanup_failure(monkeypatch) -> None:
 
     assert result.exit_code == 1
     assert result.stderr == (
-        "cp: destination:/out/copy.txt: staging failure (OSError); "
-        "destination residue may remain\n"
+        "cp: destination:/out/copy.txt: staging failure (OSError); destination residue may remain\n"
     )
     assert len(cleaned) == 1
     assert not Path(cleaned[0]).exists()
@@ -1603,11 +1561,7 @@ def test_cp_cleanup_failure_does_not_mask_verification_failure(
     monkeypatch,
 ) -> None:
     source = _file_source(
-        info_by_path={
-            "/docs/notes.txt": MappingProxyType(
-                {"type": "file", "size": 7, "checksum": "source-token"}
-            )
-        }
+        info_by_path={"/docs/notes.txt": MappingProxyType({"type": "file", "size": 7, "checksum": "source-token"})}
     )
     destination = _file_source(
         source_path="/other.txt",
@@ -1641,8 +1595,7 @@ def test_cp_cleanup_failure_does_not_mask_verification_failure(
     assert (result.exit_code, result.stdout, result.stderr) == (
         1,
         "",
-        "cp: destination:/out/copy.txt: verification failure; "
-        "destination residue may remain\n",
+        "cp: destination:/out/copy.txt: verification failure; destination residue may remain\n",
     )
     assert len(cleaned) == 1
     assert not Path(cleaned[0]).exists()
@@ -1827,9 +1780,7 @@ def test_cp_preserves_post_staging_control_flow_over_cleanup_failure(
         parent="/out",
         directories={"/", "/out"},
         put_file_by_path=({"/out/copy.txt": primary} if boundary == "upload" else None),
-        post_info_by_path=(
-            {"/out/copy.txt": primary} if boundary == "verification" else None
-        ),
+        post_info_by_path=({"/out/copy.txt": primary} if boundary == "verification" else None),
     )
     monkeypatch.setattr("fsspec_cli._cp._remove_temporary", fail_cleanup)
 

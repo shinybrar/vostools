@@ -57,12 +57,8 @@ async def negotiate_endpoint(
     sync_url = bindings.require_sync()
     authority = await filesystem._require_authority()
     target = f"vos://{authority}{path}"
-    document = nodes.build_transfer_document(
-        target, direction=direction, protocols=[protocol_uri]
-    )
-    post = await filesystem._send_to_service(
-        "POST", sync_url, content=document, headers=nodes.XML_HEADERS
-    )
+    document = nodes.build_transfer_document(target, direction=direction, protocols=[protocol_uri])
+    post = await filesystem._send_to_service("POST", sync_url, content=document, headers=nodes.XML_HEADERS)
     filesystem._raise_for_status(post, path=path, allowed=(transport.HTTP_SEE_OTHER,))
     location = negotiate.validate_redirect(
         post.headers.get("location"),
@@ -85,16 +81,11 @@ async def negotiate_endpoint(
             location,
             base=location,
             sending_bearer=(
-                filesystem._credential.method == "token"
-                and transport.same_origin(location, filesystem.endpoint_url)
+                filesystem._credential.method == "token" and transport.same_origin(location, filesystem.endpoint_url)
             ),
         )
-        details = await filesystem._send_to_service(
-            "GET", location, headers=nodes.XML_HEADERS
-        )
-        filesystem._raise_for_status(
-            details, path=path, allowed=(transport.HTTP_OK, transport.HTTP_SEE_OTHER)
-        )
+        details = await filesystem._send_to_service("GET", location, headers=nodes.XML_HEADERS)
+        filesystem._raise_for_status(details, path=path, allowed=(transport.HTTP_OK, transport.HTTP_SEE_OTHER))
         if details.status_code == transport.HTTP_OK:
             return _negotiated(
                 path,
@@ -113,9 +104,7 @@ async def negotiate_endpoint(
     raise errors.VOSpaceError(msg)
 
 
-def _negotiated(
-    path: str, direction: str, endpoint: NegotiatedEndpoint
-) -> NegotiatedEndpoint:
+def _negotiated(path: str, direction: str, endpoint: NegotiatedEndpoint) -> NegotiatedEndpoint:
     """Record the negotiated endpoint at DEBUG without query or token material."""
     logger.debug(
         "negotiated %s for %s: endpoint %s, security method %s",
@@ -127,9 +116,7 @@ def _negotiated(
     return endpoint
 
 
-def byte_routing(
-    filesystem: VOSpaceFileSystem, endpoint: NegotiatedEndpoint
-) -> tuple[dict[str, str], bool]:
+def byte_routing(filesystem: VOSpaceFileSystem, endpoint: NegotiatedEndpoint) -> tuple[dict[str, str], bool]:
     """Return the headers and cert flag for a negotiated byte request.
 
     Credentials are routed by the negotiated security method: a
@@ -146,9 +133,7 @@ def byte_routing(
     method = endpoint.security_method
     parts = urlsplit(endpoint.url)
     if parts.scheme not in ("http", "https") or not parts.netloc:
-        msg = (
-            f"negotiated byte endpoint is not an absolute http(s) URL: {endpoint.url!r}"
-        )
+        msg = f"negotiated byte endpoint is not an absolute http(s) URL: {endpoint.url!r}"
         raise errors.VOSpaceError(msg)
     if parts.username or parts.password:
         msg = "negotiated byte endpoint must not contain userinfo"
@@ -188,13 +173,9 @@ async def byte_send(  # noqa: PLR0913 - one parameter per HTTP request element.
     filesystem._ensure_usable()
     request_headers, use_cert = byte_routing(filesystem, endpoint)
     request_headers.update(headers or {})
-    request = httpx.Request(
-        method, endpoint.url, headers=request_headers, content=content
-    )
+    request = httpx.Request(method, endpoint.url, headers=request_headers, content=content)
     try:
-        response = await filesystem._pool.send(
-            request, use_cert=use_cert, stream=stream
-        )
+        response = await filesystem._pool.send(request, use_cert=use_cert, stream=stream)
     except httpx.HTTPError as exc:
         raise errors.transport_exception(exc, path=endpoint.url) from exc
     if response.is_redirect:
@@ -214,17 +195,13 @@ async def validate_read_target(filesystem: VOSpaceFileSystem, path: str) -> Node
     The node is fetched first and without its child listing: parsing it
     records the VOSpace authority, so a first read needs no separate root GET.
     """
-    node = filesystem._parse_and_note(
-        await filesystem._get_node_document(path, children=False)
-    )
+    node = filesystem._parse_and_note(await filesystem._get_node_document(path, children=False))
     if node.node_type == "link":
         await reject_external_link(filesystem, cast("str", node.target))
     return node
 
 
-async def reject_external_link_info(
-    filesystem: VOSpaceFileSystem, info: Mapping[str, Any]
-) -> None:
+async def reject_external_link_info(filesystem: VOSpaceFileSystem, info: Mapping[str, Any]) -> None:
     """Apply :func:`reject_external_link` to an fsspec info dict, if a link."""
     if info.get("islink"):
         await reject_external_link(filesystem, info.get("target") or "")
@@ -258,9 +235,7 @@ async def open_read_stream(
         direction=negotiate.DIRECTION_PULL,
         protocol_uri=negotiate.PROTOCOL_HTTPS_GET,
     )
-    response = await byte_send(
-        filesystem, endpoint, "GET", headers=transport.IDENTITY_ENCODING, stream=True
-    )
+    response = await byte_send(filesystem, endpoint, "GET", headers=transport.IDENTITY_ENCODING, stream=True)
     if response.status_code not in (transport.HTTP_OK, transport.HTTP_NO_CONTENT):
         try:
             await _raise_byte_error(response, path)
@@ -384,9 +359,7 @@ async def _ranged_get(
 ) -> bytes | httpx.Response:
     """Issue one ranged GET: validated bytes, or the open whole-object response."""
     headers = {**transport.IDENTITY_ENCODING, "Range": range_header}
-    response = await byte_send(
-        filesystem, endpoint, "GET", headers=headers, stream=True
-    )
+    response = await byte_send(filesystem, endpoint, "GET", headers=headers, stream=True)
     keep_open = False
     try:
         status = response.status_code
@@ -442,9 +415,7 @@ async def _raw_body(response: httpx.Response) -> bytes:
     return b"".join([chunk async for chunk in chunks])
 
 
-def _validate_partial(
-    body: bytes, content_range: str | None, range_header: str
-) -> None:
+def _validate_partial(body: bytes, content_range: str | None, range_header: str) -> None:
     if content_range is None:
         msg = "206 Partial Content without Content-Range"
         raise errors.VOSpaceError(msg, status=transport.HTTP_PARTIAL_CONTENT)
@@ -469,11 +440,7 @@ def _validate_partial(
         want_first, want_last = int(start), int(stop)
         if total is not None:
             want_last = min(want_last, total - 1)
-    if (
-        (total is not None and last >= total)
-        or first != want_first
-        or last != want_last
-    ):
+    if (total is not None and last >= total) or first != want_first or last != want_last:
         msg = "206 Content-Range does not match request"
         raise errors.VOSpaceError(msg, status=transport.HTTP_PARTIAL_CONTENT)
 
@@ -533,14 +500,11 @@ async def write_whole(  # noqa: PLR0913 - one parameter per PUT request element.
         if response.status_code != transport.HTTP_CREATED:
             detail = errors.bounded_text(response.content)
             msg = (
-                f"uncertain write to {path}: HTTP {response.status_code}; the "
-                f"target may have been truncated. {detail}"
+                f"uncertain write to {path}: HTTP {response.status_code}; the target may have been truncated. {detail}"
             )
             raise errors.VOSpaceError(msg, status=response.status_code)
         expected = (
-            expected_digest
-            if expected_digest is None or isinstance(expected_digest, bytes)
-            else expected_digest()
+            expected_digest if expected_digest is None or isinstance(expected_digest, bytes) else expected_digest()
         )
         _integrity.verify_returned_digest(response, expected, path)
     finally:

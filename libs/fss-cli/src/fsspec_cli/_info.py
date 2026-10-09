@@ -44,9 +44,7 @@ def _canonical_value(value: object, active: set[int]) -> object:
     active.add(identity)
     try:
         if isinstance(value, Mapping):
-            canonical: object = _canonical_mapping(
-                cast("Mapping[object, object]", value), active
-            )
+            canonical: object = _canonical_mapping(cast("Mapping[object, object]", value), active)
         elif isinstance(value, list):
             canonical = [_canonical_value(item, active) for item in value]
         elif isinstance(value, tuple):
@@ -104,14 +102,10 @@ def _canonical_set(
 ) -> _StablePresentation:
     members = sorted(_pretty(_canonical_value(item, active)) for item in value)
     if frozen:
-        spelling = (
-            "frozenset()" if not members else f"frozenset({{{', '.join(members)}}})"
-        )
+        spelling = "frozenset()" if not members else f"frozenset({{{', '.join(members)}}})"
     else:
         spelling = "set()" if not members else f"{{{', '.join(members)}}}"
-    return _StablePresentation(
-        f"{type(value).__module__}.{type(value).__qualname__}", spelling
-    )
+    return _StablePresentation(f"{type(value).__module__}.{type(value).__qualname__}", spelling)
 
 
 def _pretty(value: object) -> str:

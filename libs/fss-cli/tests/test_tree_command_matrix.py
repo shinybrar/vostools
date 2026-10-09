@@ -11,10 +11,10 @@ from fsspec.asyn import AsyncFileSystem
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
-
 from vosfs import VOSpaceFileSystem
+
+from fsspec_cli import App
 
 from ._matrix_support import (
     _memory_factory,
@@ -183,9 +183,7 @@ def test_adapted_local_tree_profile_uses_native_temporary_storage(
 
     _exercise_tree_profile("local", source, path)
 
-    adapted_filesystems = [
-        fs for fs in source.filesystems if isinstance(fs, AsyncFileSystemWrapper)
-    ]
+    adapted_filesystems = [fs for fs in source.filesystems if isinstance(fs, AsyncFileSystemWrapper)]
     assert adapted_filesystems == source.filesystems
     assert all(isinstance(fs.sync_fs, LocalFileSystem) for fs in adapted_filesystems)
 
@@ -203,9 +201,7 @@ def test_adapted_memory_tree_profile_has_isolated_state(
 
     _exercise_tree_profile("memory", source, "/docs")
 
-    adapted_filesystems = [
-        fs for fs in source.filesystems if isinstance(fs, AsyncFileSystemWrapper)
-    ]
+    adapted_filesystems = [fs for fs in source.filesystems if isinstance(fs, AsyncFileSystemWrapper)]
     assert adapted_filesystems == source.filesystems
     assert all(isinstance(fs.sync_fs, MemoryFileSystem) for fs in adapted_filesystems)
 
@@ -241,9 +237,7 @@ def test_adapted_memory_tree_fails_when_a_nested_directory_cannot_be_listed(
     assert isinstance(source.exit_calls[0][1], PermissionError)
 
 
-def test_native_vosfs_tree_profile_uses_client_traversal_over_mocked_transport() -> (
-    None
-):
+def test_native_vosfs_tree_profile_uses_client_traversal_over_mocked_transport() -> None:
     transports: list[_StrictMockTransport] = []
 
     def make_filesystem() -> VOSpaceFileSystem:
@@ -261,9 +255,7 @@ def test_native_vosfs_tree_profile_uses_client_traversal_over_mocked_transport()
 
     _exercise_tree_profile("vos", source, "/docs")
 
-    vos_filesystems = [
-        fs for fs in source.filesystems if isinstance(fs, VOSpaceFileSystem)
-    ]
+    vos_filesystems = [fs for fs in source.filesystems if isinstance(fs, VOSpaceFileSystem)]
     assert vos_filesystems == source.filesystems
     assert all(filesystem._pool.closed is True for filesystem in vos_filesystems)
     unbounded_paths = {path for _method, path in transports[0].requests}

@@ -9,10 +9,10 @@ from fsspec.asyn import AsyncFileSystem
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
-
 from vosfs import VOSpaceFileSystem
+
+from fsspec_cli import App
 
 from ._matrix_support import (
     _memory_source,
@@ -96,11 +96,7 @@ def _exercise_find_profile(  # noqa: PLR0913 - matrix golden expectations.
         ([root_info, root_ls], []),
     ]
     for source_id, (ordered, concurrent) in enumerate(expected_by_run, start=1):
-        calls = [
-            (call.operation, call.path, call.detail)
-            for call in source.calls
-            if call.source_id == source_id
-        ]
+        calls = [(call.operation, call.path, call.detail) for call in source.calls if call.source_id == source_id]
         assert calls[: len(ordered)] == ordered
         assert sorted(calls[len(ordered) :]) == concurrent
     assert all(not call.kwargs for call in source.calls)

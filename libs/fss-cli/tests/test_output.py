@@ -4,8 +4,9 @@ import locale
 
 import pytest
 import typer
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 from ._support import _invoke, _RecordingSource
 
@@ -38,16 +39,7 @@ def test_ls_processes_operands_in_order_then_renders_sorted_output_blocks() -> N
     )
 
     assert result.exit_code == 0
-    assert result.stdout == (
-        "memory:/a.txt\n"
-        "memory:/b.txt\n"
-        "\n"
-        "memory:/empty:\n"
-        "\n"
-        "memory:/z-dir:\n"
-        "first\n"
-        "second\n"
-    )
+    assert result.stdout == ("memory:/a.txt\nmemory:/b.txt\n\nmemory:/empty:\n\nmemory:/z-dir:\nfirst\nsecond\n")
     assert result.stderr == ""
     assert [(event[0], event[2]) for event in events if event[0] in {"info", "ls"}] == [
         ("info", "/z-dir"),
@@ -108,13 +100,9 @@ def test_ls_keeps_duplicates_and_successes_while_reporting_every_failure(
 
     assert result.exit_code == 1
     assert result.stderr == (
-        "ls: alpha:/missing: not found\n"
-        "ls: beta:/bad-dir: incompatible result\n"
-        "ls: alpha:/denied: permission denied\n"
+        "ls: alpha:/missing: not found\nls: beta:/bad-dir: incompatible result\nls: alpha:/denied: permission denied\n"
     )
-    assert result.stdout == (
-        "alpha:/a-file\nbeta:/z-file\nbeta:/z-file\n\nbeta:/ok-dir:\na\nz\n"
-    )
+    assert result.stdout == ("alpha:/a-file\nbeta:/z-file\nbeta:/z-file\n\nbeta:/ok-dir:\na\nz\n")
     assert [(event[0], event[2]) for event in events if event[0] in {"info", "ls"}] == [
         ("info", "/z-file"),
         ("info", "/missing"),
@@ -259,9 +247,7 @@ def test_ls_escapes_ansi_in_a_backend_diagnostic() -> None:
     result = _invoke("ls", [operand], sources={"memory": source})
 
     assert result.exit_code == 1
-    assert result.stderr == (
-        f"ls: {escaped_operand}: backend failure (RuntimeError): {escaped_message}\n"
-    )
+    assert result.stderr == (f"ls: {escaped_operand}: backend failure (RuntimeError): {escaped_message}\n")
 
 
 def test_ls_escapes_ansi_in_a_source_diagnostic() -> None:
@@ -276,10 +262,7 @@ def test_ls_escapes_ansi_in_a_source_diagnostic() -> None:
     result = _invoke("ls", [f"{name}:/file"], sources={name: broken_source})
 
     assert result.exit_code == 1
-    assert result.stderr == (
-        f"ls: {escaped_name}: source factory failure (RuntimeError): "
-        f"{escaped_message}\n"
-    )
+    assert result.stderr == (f"ls: {escaped_name}: source factory failure (RuntimeError): {escaped_message}\n")
 
 
 def test_ls_sorts_repeated_directory_blocks_with_raw_string_ties(
@@ -317,9 +300,7 @@ def test_ls_sorts_repeated_directory_blocks_with_raw_string_ties(
     )
 
     assert result.exit_code == 0
-    assert result.stdout == (
-        "memory:/a:\n\nmemory:/z:\nfirst\nsecond\n\nmemory:/z:\nfirst\nsecond\n"
-    )
+    assert result.stdout == ("memory:/a:\n\nmemory:/z:\nfirst\nsecond\n\nmemory:/z:\nfirst\nsecond\n")
     assert [(event[0], event[2]) for event in events if event[0] in {"info", "ls"}] == [
         ("info", "/z"),
         ("info", "/a"),
@@ -396,10 +377,7 @@ def test_ls_passes_first_backend_error_to_cleanup_before_output_error(
     )
 
     assert result.exit_code == 1
-    assert result.stderr == (
-        "ls: memory:/missing: not found\n"
-        "ls: output: output failure (OSError): write failed\n"
-    )
+    assert result.stderr == ("ls: memory:/missing: not found\nls: output: output failure (OSError): write failed\n")
     exception_type, exception, traceback = source.exit_calls[0]
     assert exception_type is FileNotFoundError
     assert exception is backend_error
@@ -423,9 +401,7 @@ def test_ls_writes_no_stdout_when_every_operand_fails() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: memory:/missing: not found\nls: memory:/denied: permission denied\n"
-    )
+    assert result.stderr == ("ls: memory:/missing: not found\nls: memory:/denied: permission denied\n")
 
 
 def test_ls_preserves_successful_rendering_below_a_parent_typer_app() -> None:

@@ -121,9 +121,7 @@ def test_mkdir_continues_after_an_earlier_failure() -> None:
         "/docs/bad",
         "/docs/good",
     ]
-    assert ("info", 1, "/docs/good") in [
-        (event[0], event[1], event[2]) for event in events if event[0] == "info"
-    ]
+    assert ("info", 1, "/docs/good") in [(event[0], event[1], event[2]) for event in events if event[0] == "info"]
 
 
 def test_mkdir_rejects_root_operand_when_it_already_exists() -> None:
@@ -199,9 +197,7 @@ def test_mkdir_rejects_missing_post_verify_result() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "mkdir: memory:/docs/new: uncertain state (incompatible result)\n"
-    )
+    assert result.stderr == ("mkdir: memory:/docs/new: uncertain state (incompatible result)\n")
 
 
 @pytest.mark.parametrize(
@@ -244,8 +240,7 @@ def test_mkdir_maps_confirmed_mkdir_failures_to_locked_categories(
         (RuntimeError, "uncertain state (backend failure (RuntimeError): )"),
         (
             lambda: RuntimeError("backend\\\0\r\n"),
-            "uncertain state (backend failure (RuntimeError): "
-            "backend\\\\\\x00\\x0d\\x0a)",
+            "uncertain state (backend failure (RuntimeError): backend\\\\\\x00\\x0d\\x0a)",
         ),
     ],
 )
@@ -340,9 +335,7 @@ def test_mkdir_reports_unknown_names_with_locale_sorted_known_names() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
-    assert result.stderr == (
-        "mkdir: other:/docs/new: unknown filesystem (known: alpha, zeta)\n"
-    )
+    assert result.stderr == ("mkdir: other:/docs/new: unknown filesystem (known: alpha, zeta)\n")
 
 
 def test_mkdir_refuses_an_active_same_thread_event_loop(monkeypatch) -> None:
@@ -462,9 +455,7 @@ def test_mkdir_stops_acquisition_after_a_source_factory_failure() -> None:
 
     assert result.exit_code == 1
     assert result.stdout == ""
-    assert result.stderr == (
-        "mkdir: broken: source factory failure (ValueError): factory\n"
-    )
+    assert result.stderr == ("mkdir: broken: source factory failure (ValueError): factory\n")
     assert [event[0] for event in events] == ["factory", "enter", "exit"]
 
 
@@ -496,25 +487,17 @@ def test_mkdir_p_delegates_one_makedirs_call_for_deep_parents() -> None:
     assert result.exit_code == 0
     assert result.stdout == ""
     assert result.stderr == ""
-    assert [event[0] for event in events if event[0] in {"makedirs", "mkdir"}] == [
-        "makedirs"
-    ]
+    assert [event[0] for event in events if event[0] in {"makedirs", "mkdir"}] == ["makedirs"]
     assert events[[event[0] for event in events].index("makedirs")][3] is True
-    assert ("info", 1, "/a/b/c/new") in [
-        (event[0], event[1], event[2]) for event in events if event[0] == "info"
-    ]
+    assert ("info", 1, "/a/b/c/new") in [(event[0], event[1], event[2]) for event in events if event[0] == "info"]
 
 
 def test_mkdir_p_treats_existing_directory_as_success() -> None:
     events: list[tuple[object, ...]] = []
     source = _RecordingSource(events)
 
-    first = _invoke(
-        "mkdir", ["-p", "memory:/docs/existing"], sources={"memory": source}
-    )
-    second = _invoke(
-        "mkdir", ["-p", "memory:/docs/existing"], sources={"memory": source}
-    )
+    first = _invoke("mkdir", ["-p", "memory:/docs/existing"], sources={"memory": source})
+    second = _invoke("mkdir", ["-p", "memory:/docs/existing"], sources={"memory": source})
 
     assert first.exit_code == 0
     assert second.exit_code == 0
@@ -530,9 +513,7 @@ def test_mkdir_p_rejects_existing_leaf_file() -> None:
         makedirs_by_path={"/docs/notes.txt": FileExistsError("/docs/notes.txt")},
     )
 
-    result = _invoke(
-        "mkdir", ["-p", "memory:/docs/notes.txt"], sources={"memory": source}
-    )
+    result = _invoke("mkdir", ["-p", "memory:/docs/notes.txt"], sources={"memory": source})
 
     assert result.exit_code == 1
     assert result.stdout == ""

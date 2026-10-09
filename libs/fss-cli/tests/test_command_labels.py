@@ -4,9 +4,10 @@ import asyncio
 from collections.abc import Callable
 from typing import NoReturn
 
-import fsspec_cli._app as app_module
 import pytest
 import typer
+
+import fsspec_cli._app as app_module
 from fsspec_cli._cat import _run_cat
 from fsspec_cli._command import _MappedOperand, _parse_mapped_operand
 from fsspec_cli._ls import _LsRequest, _run_ls
@@ -24,9 +25,7 @@ def test_mapped_operand_diagnostic_escapes_concrete_command_label(capsys) -> Non
         _parse_mapped_operand(_COMMAND, "bad", {"memory"})
 
     assert caught.value.exit_code == 2
-    assert capsys.readouterr().err == (
-        f"{_RENDERED_COMMAND}: bad: invalid mapped filesystem operand\n"
-    )
+    assert capsys.readouterr().err == (f"{_RENDERED_COMMAND}: bad: invalid mapped filesystem operand\n")
 
 
 def test_active_loop_refusal_escapes_concrete_command_label(capsys) -> None:
@@ -44,9 +43,7 @@ def test_active_loop_refusal_escapes_concrete_command_label(capsys) -> None:
         asyncio.run(invoke())
 
     assert caught.value.exit_code == 1
-    assert capsys.readouterr().err == (
-        f"{_RENDERED_COMMAND}: cannot run from an active event loop\n"
-    )
+    assert capsys.readouterr().err == (f"{_RENDERED_COMMAND}: cannot run from an active event loop\n")
 
 
 class _EntryFailure:
@@ -118,9 +115,7 @@ def test_source_exit_diagnostic_uses_concrete_command_label(capsys) -> None:
 
     asyncio.run(exercise())
 
-    assert capsys.readouterr().err == (
-        f"{_RENDERED_COMMAND}: source: source exit failure (OSError): exit\n"
-    )
+    assert capsys.readouterr().err == (f"{_RENDERED_COMMAND}: source: source exit failure (OSError): exit\n")
 
 
 def test_output_failure_diagnostic_uses_concrete_command_label(
@@ -159,9 +154,7 @@ def test_output_failure_diagnostic_uses_concrete_command_label(
         )
 
     assert caught.value.exit_code == 1
-    assert capsys.readouterr().err == (
-        f"{_RENDERED_COMMAND}: output: output failure (OSError): write\n"
-    )
+    assert capsys.readouterr().err == (f"{_RENDERED_COMMAND}: output: output failure (OSError): write\n")
 
 
 def test_cat_output_failure_diagnostic_uses_concrete_command_label(
@@ -191,9 +184,7 @@ def test_cat_output_failure_diagnostic_uses_concrete_command_label(
         )
 
     assert caught.value.exit_code == 1
-    assert capsys.readouterr().err == (
-        f"{_RENDERED_COMMAND}: output: output failure (OSError): write\n"
-    )
+    assert capsys.readouterr().err == (f"{_RENDERED_COMMAND}: output: output failure (OSError): write\n")
 
 
 def test_stat_output_failure_diagnostic_uses_concrete_command_label(
@@ -232,6 +223,4 @@ def test_stat_output_failure_diagnostic_uses_concrete_command_label(
         )
 
     assert caught.value.exit_code == 1
-    assert capsys.readouterr().err == (
-        f"{_RENDERED_COMMAND}: output: output failure (OSError): write\n"
-    )
+    assert capsys.readouterr().err == (f"{_RENDERED_COMMAND}: output: output failure (OSError): write\n")

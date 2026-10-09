@@ -81,11 +81,7 @@ class _BoundedRun(Generic[_ResultT]):
         self.control: BaseException | None = None
 
     def launch(self) -> None:
-        while (
-            not self.stopped
-            and len(self.pending) < self.limit
-            and self.next_index < len(self.operations)
-        ):
+        while not self.stopped and len(self.pending) < self.limit and self.next_index < len(self.operations):
             operation = self.operations[self.next_index]
             self.pending[asyncio.create_task(_capture(operation))] = self.next_index
             self.next_index += 1
@@ -104,18 +100,14 @@ class _BoundedRun(Generic[_ResultT]):
             self.interrupt()
             return
         self.outcomes[index] = result
-        if result.error is not None or (
-            self.stop is not None and self.stop(cast("_ResultT", result.value))
-        ):
+        if result.error is not None or (self.stop is not None and self.stop(cast("_ResultT", result.value))):
             self.stopped = True
 
     async def run(self) -> list[_Outcome[_ResultT] | None]:
         try:
             self.launch()
             while self.pending:
-                done, _ = await asyncio.wait(
-                    self.pending, return_when=asyncio.FIRST_COMPLETED
-                )
+                done, _ = await asyncio.wait(self.pending, return_when=asyncio.FIRST_COMPLETED)
                 for task in done:
                     self.record(task)
                 self.launch()

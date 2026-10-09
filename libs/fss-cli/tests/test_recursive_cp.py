@@ -13,8 +13,9 @@ from typing import TYPE_CHECKING, NoReturn
 import pytest
 import typer
 from fsspec.asyn import AsyncFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
+
+from fsspec_cli import App
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -60,9 +61,7 @@ class _TreeFileSystem(AsyncFileSystem):
         return [
             self._metadata(candidate)
             for candidate in sorted(self.entries)
-            if candidate != path
-            and candidate.startswith(f"{prefix}/")
-            and "/" not in candidate[len(prefix) + 1 :]
+            if candidate != path and candidate.startswith(f"{prefix}/") and "/" not in candidate[len(prefix) + 1 :]
         ]
 
     async def _ls(
@@ -157,9 +156,7 @@ def test_recursive_copy_does_not_omit_fields_hidden_by_items() -> None:
     source = _source(entries, [], configure=configure)
     result = _invoke(["-R", "memory:/docs", "memory:/out/copy"], {"memory": source})
     assert result.exit_code == 0
-    copied = CliRunner().invoke(
-        App({"memory": source}).typer_app, ["size", "memory:/out/copy/important"]
-    )
+    copied = CliRunner().invoke(App({"memory": source}).typer_app, ["size", "memory:/out/copy/important"])
     assert (copied.exit_code, copied.stdout) == (0, "7\tmemory:/out/copy/important\n")
 
 
@@ -213,12 +210,8 @@ def test_recursive_copy_replaces_same_size_different_contents() -> None:
     source = _source(entries, calls)
     result = _invoke(["-R", "memory:/docs", "memory:/out"], {"memory": source})
     assert result.exit_code == 0
-    assert [call for call in calls if call[0] == "put_file"] == [
-        ("put_file", "/out/docs/f", "overwrite")
-    ]
-    assert [
-        call for call in calls if call[0] == "get_file" and call[1] == "/docs/f"
-    ] == [("get_file", "/docs/f")]
+    assert [call for call in calls if call[0] == "put_file"] == [("put_file", "/out/docs/f", "overwrite")]
+    assert [call for call in calls if call[0] == "get_file" and call[1] == "/docs/f"] == [("get_file", "/docs/f")]
 
 
 def test_recursive_copy_does_not_trust_equal_etags_as_content_checksums() -> None:
@@ -231,8 +224,7 @@ def test_recursive_copy_does_not_trust_equal_etags_as_content_checksums() -> Non
         "/out/docs/f": b"old",
     }
     metadata = {
-        path: {"name": path, "type": "file", "size": 3, "ETag": "opaque"}
-        for path in ("/docs/f", "/out/docs/f")
+        path: {"name": path, "type": "file", "size": 3, "ETag": "opaque"} for path in ("/docs/f", "/out/docs/f")
     }
     calls = []
     result = _invoke(
@@ -439,9 +431,7 @@ def test_recursive_cp_reports_source_exit_failure_after_verified_copy() -> None:
     assert entries["/out/docs/notes.txt"] == b"notes"
 
 
-def test_recursive_cp_copies_nested_and_empty_directories_through_host_staging() -> (
-    None
-):
+def test_recursive_cp_copies_nested_and_empty_directories_through_host_staging() -> None:
     entries: dict[str, bytes | None] = {
         "/": None,
         "/docs": None,
@@ -847,9 +837,7 @@ def test_recursive_cp_detects_source_mutation_before_transfer() -> None:
     assert destination_entries["/out/copy"] is None
 
 
-def test_recursive_cp_reports_partial_destination_residue_after_upload_failure() -> (
-    None
-):
+def test_recursive_cp_reports_partial_destination_residue_after_upload_failure() -> None:
     source_entries: dict[str, bytes | None] = {
         "/": None,
         "/docs": None,
@@ -987,9 +975,7 @@ def test_recursive_cp_enforces_exact_manifest_entry_limit(
     calls: list[tuple[object, ...]] = []
 
     children = [
-        {"name": path, "type": "directory", "size": 0}
-        for path in sorted(entries)
-        if path.startswith("/source/")
+        {"name": path, "type": "directory", "size": 0} for path in sorted(entries) if path.startswith("/source/")
     ]
 
     def configure(filesystem: _TreeFileSystem) -> None:
@@ -1130,9 +1116,7 @@ def test_recursive_cp_skips_entry_preflight_when_destination_root_is_missing() -
     )
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
-    first_mutation = next(
-        index for index, call in enumerate(destination_calls) if call[0] == "mkdir"
-    )
+    first_mutation = next(index for index, call in enumerate(destination_calls) if call[0] == "mkdir")
     # Only target resolution reads metadata before mutation: nothing under the
     # missing root can exist, so no per-entry preflight is issued.
     assert destination_calls[:first_mutation] == [
@@ -1141,9 +1125,7 @@ def test_recursive_cp_skips_entry_preflight_when_destination_root_is_missing() -
     ]
     # Each entry is read exactly once, by the final destination proof.
     assert sorted(
-        call[1]
-        for call in destination_calls
-        if call[0] == "info" and str(call[1]).startswith("/out/copy")
+        call[1] for call in destination_calls if call[0] == "info" and str(call[1]).startswith("/out/copy")
     ) == [
         "/out/copy",
         "/out/copy",
@@ -1192,9 +1174,7 @@ def test_recursive_cp_overlaps_transfers_within_the_concurrency_bound() -> None:
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
     assert peak == 16
     for index in range(20):
-        assert destination_entries[f"/out/copy/f{index:02d}"] == (
-            f"payload-{index:02d}".encode()
-        )
+        assert destination_entries[f"/out/copy/f{index:02d}"] == (f"payload-{index:02d}".encode())
 
 
 def test_recursive_cp_creates_missing_directories_parents_first_by_depth() -> None:

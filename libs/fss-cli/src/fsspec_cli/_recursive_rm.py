@@ -159,10 +159,7 @@ async def _manifest(
     level = [root_entry]
     while level:
         listings = await _gather_bounded(
-            [
-                partial(_call, filesystem, "_ls", directory.path, detail=True)
-                for directory in level
-            ]
+            [partial(_call, filesystem, "_ls", directory.path, detail=True) for directory in level]
         )
         next_level: list[_ManifestEntry] = []
         for directory, result in zip(level, listings, strict=True):
@@ -194,9 +191,7 @@ async def _manifest(
 
 
 def _revalidate_manifest(manifest: _Manifest) -> None:
-    if not manifest.entries or manifest.entries[-1] != _ManifestEntry(
-        manifest.root, "directory"
-    ):
+    if not manifest.entries or manifest.entries[-1] != _ManifestEntry(manifest.root, "directory"):
         raise _IncompatibleManifestError
     seen: set[str] = set()
     directories = {manifest.root}
@@ -311,10 +306,7 @@ async def _mutate(
         levels.setdefault(_depth(manifest, entry), []).append(entry)
     for depth in sorted(levels, reverse=True):
         outcomes = await _run_bounded(
-            [
-                partial(_remove_entry, operand, filesystem, manifest, entry)
-                for entry in levels[depth]
-            ],
+            [partial(_remove_entry, operand, filesystem, manifest, entry) for entry in levels[depth]],
             stop=lambda failure: failure is not None,
         )
         for outcome in outcomes:

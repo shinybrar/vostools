@@ -65,16 +65,12 @@ class _TreeRemoval:
 
     async def subtree(self, path: str) -> None:
         """Empty ``path`` concurrently, then delete it if nothing failed."""
-        children = await self._step(
-            path, lambda: self.filesystem._ls(path, detail=True)
-        )
+        children = await self._step(path, lambda: self.filesystem._ls(path, detail=True))
         if children is _SKIPPED:
             return
         await asyncio.gather(
             *(
-                self.subtree(child["name"])
-                if child["type"] == "directory"
-                else self.delete(child["name"])
+                self.subtree(child["name"]) if child["type"] == "directory" else self.delete(child["name"])
                 for child in children
             )
         )
@@ -83,10 +79,7 @@ class _TreeRemoval:
 
     async def delete(self, path: str) -> None:
         """Delete one node and record it only once the service confirms it."""
-        if (
-            await self._step(path, lambda: self.filesystem._delete_node(path))
-            is _SKIPPED
-        ):
+        if await self._step(path, lambda: self.filesystem._delete_node(path)) is _SKIPPED:
             return
         self.completed.append(path)
 

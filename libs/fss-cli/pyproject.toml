@@ -63,16 +63,13 @@ testpaths = ["tests"]
 branch = true
 source = ["fsspec_cli"]
 
-# The shared root policy at 88 columns until the 120-column reformat.
 [tool.ruff]
 extend = "../../pyproject.toml"
-line-length = 88
 
 # Lint ratchet: rules that are new since the import and not yet fixed here. Remove a
 # code once the package is clean for it.
 [tool.ruff.lint]
 ignore = [
-    "I001",    # Import order moves with first-party detection; fixed by the reformat.
     "ISC004",  # Implicit concatenation in test collections; needs parentheses.
     "PLR0917", # Positional internal helpers; needs keyword-only parameters.
 ]

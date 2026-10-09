@@ -16,11 +16,7 @@ _GROUP_PREFIXES = ("ivo://cadc.nrc.ca/gms?", "ivo://cadc.nrc.ca/gms#")
 def _groups(value: str) -> tuple[str, ...]:
     return tuple(
         next(
-            (
-                group[len(prefix) :]
-                for prefix in _GROUP_PREFIXES
-                if group.startswith(prefix)
-            ),
+            (group[len(prefix) :] for prefix in _GROUP_PREFIXES if group.startswith(prefix)),
             group,
         )
         for group in value.split()

@@ -11,10 +11,10 @@ from fsspec.asyn import AsyncFileSystem
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
-
 from vosfs import VOSpaceFileSystem
+
+from fsspec_cli import App
 
 from ._matrix_support import (
     _memory_factory,
@@ -165,9 +165,7 @@ def test_adapted_local_head_and_tail_profiles_use_native_storage(
 def test_adapted_memory_head_and_tail_profiles_use_isolated_state(
     monkeypatch,
 ) -> None:
-    source = _ProfileSource(
-        _memory_factory(monkeypatch, {"/blob.bin": _PAYLOAD}, directories=())
-    )
+    source = _ProfileSource(_memory_factory(monkeypatch, {"/blob.bin": _PAYLOAD}, directories=()))
 
     _exercise_profiles("memory", source, "/blob.bin")
 

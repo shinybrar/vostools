@@ -8,6 +8,8 @@ from unittest.mock import Mock
 
 import pytest
 import typer
+from typer.testing import CliRunner
+
 from fsspec_cli import (
     App,
     AppCapabilities,
@@ -16,7 +18,6 @@ from fsspec_cli import (
     CommandContext,
     RecursionCapabilities,
 )
-from typer.testing import CliRunner
 
 from ._ansi import strip_ansi
 from ._support import _invoke, _source_must_not_run
@@ -264,9 +265,7 @@ def test_ls_reports_unknown_names_with_locale_sorted_known_names() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: other:/docs: unknown filesystem (known: alpha, zeta)\n"
-    )
+    assert result.stderr == ("ls: other:/docs: unknown filesystem (known: alpha, zeta)\n")
 
 
 def test_app_snapshots_its_source_mapping_once() -> None:
@@ -297,9 +296,7 @@ def test_source_aware_callback_keeps_parent_context_and_frozen_sources() -> None
         assert host_context is not None
         observed.append((host_context.label, *command_context.sources))
         with pytest.raises(TypeError):
-            cast("dict[str, AsyncFilesystemSource]", command_context.sources)[
-                "later"
-            ] = _source_must_not_run
+            cast("dict[str, AsyncFilesystemSource]", command_context.sources)["later"] = _source_must_not_run
         with pytest.raises(FrozenInstanceError):
             command_context.sources = {}  # type: ignore[misc]
 
@@ -412,9 +409,7 @@ def test_ls_escapes_each_known_name_in_an_unknown_name_diagnostic() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: other:/docs: unknown filesystem (known: known\\\\name\\x0d)\n"
-    )
+    assert result.stderr == ("ls: other:/docs: unknown filesystem (known: known\\\\name\\x0d)\n")
 
 
 @pytest.mark.parametrize("arguments", [["-A"], ["-AA", "--"]])
@@ -502,9 +497,7 @@ def test_ls_renders_all_diagnostic_control_characters_in_order() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
-    assert result.stderr == (
-        "ls: memory:/bad\\\\\\x00\\x0d\\x0a: invalid mapped filesystem operand\n"
-    )
+    assert result.stderr == ("ls: memory:/bad\\\\\\x00\\x0d\\x0a: invalid mapped filesystem operand\n")
 
 
 @pytest.mark.parametrize(

@@ -11,10 +11,10 @@ from fsspec.asyn import AsyncFileSystem
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
-
 from vosfs import VOSpaceFileSystem
+
+from fsspec_cli import App
 
 from ._matrix_support import (
     _memory_factory,
@@ -308,7 +308,4 @@ def test_native_vosfs_size_and_test_profiles_use_only_mocked_transport() -> None
     assert all(isinstance(fs, VOSpaceFileSystem) for fs in source.filesystems)
     assert all(fs._pool.closed is True for fs in source.filesystems)
     assert all(transport.closed for transport in transports)
-    assert all(
-        transport.requests[0] == ("GET", "/arc/capabilities")
-        for transport in transports
-    )
+    assert all(transport.requests[0] == ("GET", "/arc/capabilities") for transport in transports)

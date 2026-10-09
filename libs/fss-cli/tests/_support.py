@@ -7,8 +7,9 @@ from types import MappingProxyType
 from typing import NoReturn
 
 from fsspec.asyn import AsyncFileSystem
-from fsspec_cli import App, AsyncFilesystemSource
 from typer.testing import CliRunner, Result
+
+from fsspec_cli import App, AsyncFilesystemSource
 
 
 def _source_must_not_run() -> NoReturn:
@@ -102,9 +103,7 @@ class _RecordingFileSystem(AsyncFileSystem):
         if self.source.post_info_error is not None:
             raise self.source.post_info_error
         if path in self._file_contents:
-            return MappingProxyType(
-                {"type": "file", "size": len(self._file_contents[path])}
-            )
+            return MappingProxyType({"type": "file", "size": len(self._file_contents[path])})
         if path in self._directories or path in self._created_dirs:
             return MappingProxyType({"type": "directory", "size": 0})
         raise FileNotFoundError(path)
@@ -113,9 +112,7 @@ class _RecordingFileSystem(AsyncFileSystem):
         self, path: str, **kwargs: object
     ) -> object:
         del kwargs
-        self.source.events.append(
-            ("info", self.source_id, path, id(asyncio.get_running_loop()))
-        )
+        self.source.events.append(("info", self.source_id, path, id(asyncio.get_running_loop())))
         if path in self._pending_rmdir_verify:
             return self._post_rmdir_info(path)
         if path in self._pending_unlink_verify:
@@ -138,9 +135,7 @@ class _RecordingFileSystem(AsyncFileSystem):
                 raise self.source.info_error
             return self.source.info_result
         if path in self._file_contents:
-            return MappingProxyType(
-                {"type": "file", "size": len(self._file_contents[path])}
-            )
+            return MappingProxyType({"type": "file", "size": len(self._file_contents[path])})
         if path in self._directories or path in self._created_dirs:
             return MappingProxyType({"type": "directory", "size": 0})
         if self.source.info_error is not None:
@@ -179,9 +174,7 @@ class _RecordingFileSystem(AsyncFileSystem):
         **kwargs: object,
     ) -> object:
         del kwargs
-        self.source.events.append(
-            ("du", self.source_id, path, total, id(asyncio.get_running_loop()))
-        )
+        self.source.events.append(("du", self.source_id, path, total, id(asyncio.get_running_loop())))
         if self.source.du_error is not None:
             raise self.source.du_error
         return self.source.du_result
@@ -318,9 +311,7 @@ class _RecordingFileSystem(AsyncFileSystem):
 
     async def _rmdir(self, path: str, **kwargs: object) -> None:
         del kwargs
-        self.source.events.append(
-            ("rmdir", self.source_id, path, id(asyncio.get_running_loop()))
-        )
+        self.source.events.append(("rmdir", self.source_id, path, id(asyncio.get_running_loop())))
         if self.source.trap_rmdir:
             message = "_rmdir must not be called by file-only removal"
             raise AssertionError(message)
@@ -335,9 +326,7 @@ class _RecordingFileSystem(AsyncFileSystem):
 
     async def _rm_file(self, path: str, **kwargs: object) -> None:
         del kwargs
-        self.source.events.append(
-            ("rm_file", self.source_id, path, id(asyncio.get_running_loop()))
-        )
+        self.source.events.append(("rm_file", self.source_id, path, id(asyncio.get_running_loop())))
         if path in self.source.rm_file_by_path:
             scripted = self.source.rm_file_by_path[path]
             if isinstance(scripted, BaseException):
@@ -349,9 +338,7 @@ class _RecordingFileSystem(AsyncFileSystem):
 
     async def _rm(self, path: str, **kwargs: object) -> None:
         del kwargs
-        self.source.events.append(
-            ("rm", self.source_id, path, id(asyncio.get_running_loop()))
-        )
+        self.source.events.append(("rm", self.source_id, path, id(asyncio.get_running_loop())))
         message = "_rm must not be called by file-only removal"
         raise AssertionError(message)
 
@@ -381,9 +368,7 @@ class _RecordingFileSystem(AsyncFileSystem):
             return
         if path1 in self._file_contents:
             content = self._file_contents[path1]
-        elif path1 in self.source.get_file_by_path and isinstance(
-            self.source.get_file_by_path[path1], bytes
-        ):
+        elif path1 in self.source.get_file_by_path and isinstance(self.source.get_file_by_path[path1], bytes):
             content = self.source.get_file_by_path[path1]
         else:
             content = self.source.get_file_content
@@ -393,9 +378,7 @@ class _RecordingFileSystem(AsyncFileSystem):
 
     async def _mv(self, path1: str, path2: str, **kwargs: object) -> None:
         del kwargs
-        self.source.events.append(
-            ("mv", self.source_id, path1, path2, id(asyncio.get_running_loop()))
-        )
+        self.source.events.append(("mv", self.source_id, path1, path2, id(asyncio.get_running_loop())))
         if path1 in self.source.mv_by_path:
             scripted = self.source.mv_by_path[path1]
             if isinstance(scripted, BaseException):
@@ -518,16 +501,12 @@ class _RecordingContext:
         self.filesystem = _RecordingFileSystem(source, source_id)
 
     async def __aenter__(self) -> _RecordingFileSystem:
-        self.source.events.append(
-            ("enter", self.source_id, id(asyncio.get_running_loop()))
-        )
+        self.source.events.append(("enter", self.source_id, id(asyncio.get_running_loop())))
         return self.filesystem
 
     async def __aexit__(self, *exc_info: object) -> object:
         self.source.exit_calls.append(exc_info)
-        self.source.events.append(
-            ("exit", self.source_id, id(asyncio.get_running_loop()))
-        )
+        self.source.events.append(("exit", self.source_id, id(asyncio.get_running_loop())))
         if self.source.exit_error is not None:
             raise self.source.exit_error
         return self.source.exit_result

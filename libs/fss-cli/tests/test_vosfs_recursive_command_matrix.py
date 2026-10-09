@@ -8,10 +8,10 @@ import pytest
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.local import LocalFileSystem
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner
-
 from vosfs import VOSpaceFileSystem
+
+from fsspec_cli import App
 
 from ._matrix_support import (
     _exercise_recursive_rm_profile,
@@ -73,11 +73,7 @@ class _RecursiveRmMockTransport(httpx.MockTransport):
                         "link": "vos:LinkNode",
                         "special": "vos:UnknownNode",
                     }[child_kind]
-                    target = (
-                        f"<vos:target>vos://{_AUTHORITY}/docs/z.txt</vos:target>"
-                        if child_kind == "link"
-                        else ""
-                    )
+                    target = f"<vos:target>vos://{_AUTHORITY}/docs/z.txt</vos:target>" if child_kind == "link" else ""
                     children.append(
                         f'<vos:node xsi:type="{child_type}" '
                         f'uri="vos://{_AUTHORITY}{child}"><vos:properties/>'
@@ -85,11 +81,7 @@ class _RecursiveRmMockTransport(httpx.MockTransport):
                         + target
                         + "</vos:node>"
                     )
-        nodes = (
-            f"<vos:nodes>{''.join(children)}</vos:nodes>"
-            if node_type == "container"
-            else ""
-        )
+        nodes = f"<vos:nodes>{''.join(children)}</vos:nodes>" if node_type == "container" else ""
         return f"""<vos:node
     xmlns:vos="http://www.ivoa.net/xml/VOSpace/v2.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -115,9 +107,7 @@ class _RecursiveRmMockTransport(httpx.MockTransport):
             if call[0] == "DELETE":
                 if path == self.cancel_delete_path:
                     current = asyncio.current_task()
-                    owner = next(
-                        task for task in asyncio.all_tasks() if task is not current
-                    )
+                    owner = next(task for task in asyncio.all_tasks() if task is not current)
                     owner.cancel()
                     await asyncio.sleep(0)
                     self.events.append("delete-drained")
@@ -134,9 +124,7 @@ class _RecursiveRmMockTransport(httpx.MockTransport):
                     child, kind = addition
                     self.nodes[child] = kind
                 prefix = f"{path}/"
-                if path not in self.nodes or any(
-                    child.startswith(prefix) for child in self.nodes
-                ):
+                if path not in self.nodes or any(child.startswith(prefix) for child in self.nodes):
                     return httpx.Response(409, text="not empty")
                 del self.nodes[path]
                 return httpx.Response(200, text="deleted")
@@ -405,9 +393,7 @@ def test_recursive_cp_between_distinct_native_vosfs_and_adapted_sources(
             return _ProbedSource(make_vosfs, close=_close_vosfs)
         if form == "local":
             return _ProbedSource(
-                lambda: AsyncFileSystemWrapper(
-                    LocalFileSystem(skip_instance_cache=True), asynchronous=True
-                )
+                lambda: AsyncFileSystemWrapper(LocalFileSystem(skip_instance_cache=True), asynchronous=True)
             )
         return _ProbedSource(lambda: AsyncFileSystemWrapper(memory, asynchronous=True))
 

@@ -86,9 +86,7 @@ def test_filesystem_requests_use_the_environment_proxy(monkeypatch) -> None:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("HTTPS_PROXY", "http://proxy.invalid:8080")
     monkeypatch.setattr(httpcore.AsyncHTTPProxy, "handle_async_request", proxy_request)
-    monkeypatch.setattr(
-        httpcore.AsyncConnectionPool, "handle_async_request", direct_request
-    )
+    monkeypatch.setattr(httpcore.AsyncConnectionPool, "handle_async_request", direct_request)
     fs = VOSpaceFileSystem(BASE_URL, trust_env=True, skip_instance_cache=True)
     try:
         with pytest.raises(ConnectionError):
@@ -111,9 +109,7 @@ async def test_cert_client_requested_without_certfile_raises() -> None:
 
 async def test_no_cookie_is_resent_after_set_cookie(router: respx.Router) -> None:
     seen: dict[str, str | None] = {}
-    router.get("/a").mock(
-        return_value=httpx.Response(200, headers={"Set-Cookie": "sid=abc; Path=/"})
-    )
+    router.get("/a").mock(return_value=httpx.Response(200, headers={"Set-Cookie": "sid=abc; Path=/"}))
 
     def capture(request: httpx.Request) -> httpx.Response:
         seen["cookie"] = request.headers.get("cookie")

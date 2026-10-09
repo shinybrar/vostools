@@ -80,11 +80,7 @@ async def _search(
     filesystem: AsyncFileSystem,
 ) -> str | _Failure:
     try:
-        root_info = (
-            await _call(filesystem, "_info", request.operand.path)
-            if request.kind == "d"
-            else None
-        )
+        root_info = await _call(filesystem, "_info", request.operand.path) if request.kind == "d" else None
         rows = await _walk(
             filesystem,
             request.operand.path,

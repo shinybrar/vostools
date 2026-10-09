@@ -60,9 +60,7 @@ async def test_info_of_data_node(router: respx.Router) -> None:
 
 async def test_info_missing_raises_file_not_found(router: respx.Router) -> None:
     mock_capabilities(router)
-    router.get(f"{NODES_URL}/gone").mock(
-        return_value=httpx.Response(404, text="not found")
-    )
+    router.get(f"{NODES_URL}/gone").mock(return_value=httpx.Response(404, text="not found"))
     fs = make_fs(router, asynchronous=True)
     with pytest.raises(FileNotFoundError):
         await fs._info("/gone")

@@ -13,8 +13,9 @@ from email.parser import BytesParser
 from importlib.metadata import PackageNotFoundError, distribution
 from pathlib import Path
 
-import fsspec_cli
 import pytest
+
+import fsspec_cli
 
 _GATE_ENVIRONMENT = "FSSPEC_CLI_INSTALLED_WHEEL_GATE"
 
@@ -52,11 +53,7 @@ def test_distribution_has_only_locked_runtime_metadata() -> None:
     }
 
     assert requirements == {"fsspec", "typer"}
-    assert [
-        entry_point
-        for entry_point in installed.entry_points
-        if entry_point.group == "console_scripts"
-    ] == []
+    assert [entry_point for entry_point in installed.entry_points if entry_point.group == "console_scripts"] == []
 
 
 def test_distribution_is_non_editable_and_matches_built_wheel() -> None:
@@ -71,16 +68,12 @@ def test_distribution_is_non_editable_and_matches_built_wheel() -> None:
     assert "archive_info" in direct_url
 
     with zipfile.ZipFile(wheel) as archive:
-        wheel_files = {
-            member.filename for member in archive.infolist() if not member.is_dir()
-        }
+        wheel_files = {member.filename for member in archive.infolist() if not member.is_dir()}
     installed_files = {str(path) for path in installed.files or ()}
     generated_files = {
         path
         for path in installed_files
-        if path.endswith(
-            ("/INSTALLER", "/REQUESTED", "/direct_url.json", "/uv_cache.json")
-        )
+        if path.endswith(("/INSTALLER", "/REQUESTED", "/direct_url.json", "/uv_cache.json"))
     }
     assert installed_files - generated_files == wheel_files
 
@@ -95,9 +88,7 @@ def test_distribution_artifacts_match_installed_version() -> None:
     assert source_distribution.name == f"fsspec_cli-{installed_version}.tar.gz"
 
     with tarfile.open(source_distribution, "r:gz") as archive:
-        package_info_name = next(
-            name for name in archive.getnames() if name.endswith("/PKG-INFO")
-        )
+        package_info_name = next(name for name in archive.getnames() if name.endswith("/PKG-INFO"))
         package_info_file = archive.extractfile(package_info_name)
         assert package_info_file is not None
         package_info = BytesParser().parse(package_info_file)
@@ -119,8 +110,7 @@ def test_vosfs_integration_uses_a_separately_installed_wheel() -> None:
     assert direct_url["url"] == wheel.as_uri()
     assert direct_url.get("dir_info", {}).get("editable") is not True
     assert all(
-        not requirement.lower().startswith(("fsspec-cli", "fsspec_cli"))
-        for requirement in installed.requires or ()
+        not requirement.lower().startswith(("fsspec-cli", "fsspec_cli")) for requirement in installed.requires or ()
     )
 
 

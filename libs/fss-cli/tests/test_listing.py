@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from types import MappingProxyType
 
 import pytest
+
 from fsspec_cli._listing import ListingRow, format_size, render_listing, to_listing
 
 
@@ -84,8 +85,7 @@ def test_to_listing_interprets_equivalent_naive_times_as_utc() -> None:
     naive_iso = "2024-01-02T03:04:05.000"
 
     normalized = [
-        to_listing({"name": "/x", "type": "file", "mtime": value}).mtime
-        for value in (naive_datetime, naive_iso)
+        to_listing({"name": "/x", "type": "file", "mtime": value}).mtime for value in (naive_datetime, naive_iso)
     ]
 
     assert normalized == [1_704_164_645.0, 1_704_164_645.0]
@@ -214,10 +214,7 @@ def test_render_listing_drops_columns_unsupported_by_every_row() -> None:
         to_listing({"name": "/sub", "type": "directory"}),
     ]
 
-    assert (
-        render_listing(rows)
-        == "-?????????  -  -  -  -  -  a.txt\nd?????????  -  -  -  -  -  sub\n"
-    )
+    assert render_listing(rows) == "-?????????  -  -  -  -  -  a.txt\nd?????????  -  -  -  -  -  sub\n"
 
 
 def test_render_listing_uses_union_columns_and_neutral_per_row_gaps(

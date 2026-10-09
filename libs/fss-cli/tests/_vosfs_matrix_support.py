@@ -54,15 +54,9 @@ _SYNC_CAPABILITIES = f"""<?xml version="1.0" encoding="UTF-8"?>
 def _vos_properties(length: int | None = None, mtime: str | None = None) -> str:
     inner = ""
     if length is not None:
-        inner += (
-            '<vos:property uri="ivo://ivoa.net/vospace/core#length">'
-            f"{length}</vos:property>"
-        )
+        inner += f'<vos:property uri="ivo://ivoa.net/vospace/core#length">{length}</vos:property>'
     if mtime is not None:
-        inner += (
-            '<vos:property uri="ivo://ivoa.net/vospace/core#mtime">'
-            f"{mtime}</vos:property>"
-        )
+        inner += f'<vos:property uri="ivo://ivoa.net/vospace/core#mtime">{mtime}</vos:property>'
     return f"<vos:properties>{inner}</vos:properties>" if inner else "<vos:properties/>"
 
 
@@ -88,10 +82,7 @@ def _vos_child(
         inner += "<vos:nodes/>"
     if target is not None:
         inner += f"<vos:target>vos://{_AUTHORITY}{target}</vos:target>"
-    return (
-        f'<vos:node xsi:type="vos:{kind}" uri="vos://{_AUTHORITY}{path}">'
-        f"{inner}</vos:node>"
-    )
+    return f'<vos:node xsi:type="vos:{kind}" uri="vos://{_AUTHORITY}{path}">{inner}</vos:node>'
 
 
 def _vos_container(path: str, children: str = "") -> bytes:
@@ -102,9 +93,7 @@ def _vos_container(path: str, children: str = "") -> bytes:
     )
 
 
-def _vos_data(
-    path: str, *, length: int | None = None, mtime: str | None = None
-) -> bytes:
+def _vos_data(path: str, *, length: int | None = None, mtime: str | None = None) -> bytes:
     return _vos_document("DataNode", path, _vos_properties(length, mtime))
 
 
@@ -157,10 +146,7 @@ def _vosfs_source(
     transports: list[httpx.MockTransport] = []
 
     def make_filesystem() -> VOSpaceFileSystem:
-        if transport_factory is not None:
-            transport = transport_factory()
-        else:
-            transport = _StrictMockTransport(responses)
+        transport = transport_factory() if transport_factory is not None else _StrictMockTransport(responses)
         transports.append(transport)
         return VOSpaceFileSystem(
             _BASE_URL,

@@ -85,11 +85,7 @@ def verify_returned_digest(
 
 def decode_digest(header: str) -> bytes | None:
     """Decode an MD5 digest header from hex or base64, or ``None`` if unusable."""
-    value = (
-        header.split("=", 1)[1].strip()
-        if header.lower().startswith("md5=")
-        else header.strip()
-    )
+    value = header.split("=", 1)[1].strip() if header.lower().startswith("md5=") else header.strip()
     with contextlib.suppress(ValueError):
         return bytes.fromhex(value)
     with contextlib.suppress(ValueError):

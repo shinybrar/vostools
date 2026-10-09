@@ -9,6 +9,7 @@ from functools import partial
 from typing import TYPE_CHECKING, TextIO
 
 from fsspec.asyn import AsyncFileSystem
+
 from fsspec_cli import App
 
 if TYPE_CHECKING:

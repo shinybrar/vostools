@@ -87,9 +87,7 @@ def _listed_row(
         pathname = name.rstrip("/")
         if pathname == stripped_root:
             collection, key = files, ""
-        elif _has_dot_segment(pathname) or not _same_lexical_path(
-            _lexical_parent(pathname), root
-        ):
+        elif _has_dot_segment(pathname) or not _same_lexical_path(_lexical_parent(pathname), root):
             raise _IncompatibleListingError
         else:
             key = pathname.rsplit("/", 1)[-1]
@@ -140,10 +138,7 @@ async def _walk(
     depth = 1
     while level:
         outcomes = await _run_bounded(
-            [
-                partial(_call, filesystem, "_ls", directory, detail=True)
-                for directory in level
-            ]
+            [partial(_call, filesystem, "_ls", directory, detail=True) for directory in level]
         )
         next_level: list[str] = []
         # Settle in breadth-first order, so an earlier malformed listing wins

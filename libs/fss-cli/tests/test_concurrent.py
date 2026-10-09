@@ -9,9 +9,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 from fsspec.asyn import AsyncFileSystem
+from typer.testing import CliRunner
+
 from fsspec_cli import App
 from fsspec_cli._concurrent import _CONCURRENCY, _gather_bounded, _run_bounded
-from typer.testing import CliRunner
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -44,14 +45,7 @@ def test_values_keep_submission_order_under_the_bound() -> None:
     probe = _Probe()
     count = _CONCURRENCY + 4
 
-    values = asyncio.run(
-        _gather_bounded(
-            [
-                partial(probe.run, index, (count - index) / 1000)
-                for index in range(count)
-            ]
-        )
-    )
+    values = asyncio.run(_gather_bounded([partial(probe.run, index, (count - index) / 1000) for index in range(count)]))
 
     assert values == list(range(count))
     assert probe.peak == _CONCURRENCY
@@ -128,9 +122,7 @@ def test_caller_cancellation_drains_started_operations() -> None:
             finished.append(index)
 
     async def main() -> None:
-        task = asyncio.create_task(
-            _run_bounded([partial(operation, index) for index in range(3)])
-        )
+        task = asyncio.create_task(_run_bounded([partial(operation, index) for index in range(3)]))
         await asyncio.sleep(0.01)
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
@@ -162,9 +154,7 @@ class _RemovalFileSystem(AsyncFileSystem):
     async def _ls(self, path: str, **kwargs: object) -> list[dict[str, object]]:
         del kwargs
         return [
-            {"name": child, "type": "file", "size": 0}
-            for child in sorted(self.present)
-            if child.startswith(f"{path}/")
+            {"name": child, "type": "file", "size": 0} for child in sorted(self.present) if child.startswith(f"{path}/")
         ]
 
     async def _rm_file(self, path: str, **kwargs: object) -> None:

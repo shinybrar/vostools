@@ -12,8 +12,9 @@ from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from fsspec.asyn import AsyncFileSystem
 from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
 from fsspec.implementations.memory import MemoryFileSystem
-from fsspec_cli import App
 from typer.testing import CliRunner, Result
+
+from fsspec_cli import App
 
 if TYPE_CHECKING:
     from types import TracebackType
@@ -170,9 +171,7 @@ class _ProbedSource(Generic[_FilesystemT]):
     def __call__(self) -> AbstractAsyncContextManager[_FilesystemT]:
         self._source_count += 1
         source_id = self._source_count
-        self.lifecycle.append(
-            LifecycleEvent("factory", source_id, id(asyncio.get_running_loop()))
-        )
+        self.lifecycle.append(LifecycleEvent("factory", source_id, id(asyncio.get_running_loop())))
         return _ProbedContext(self, source_id)
 
     def _wrap(
@@ -191,9 +190,7 @@ class _ProbedSource(Generic[_FilesystemT]):
                 extra[spec.keyword] = kwargs[spec.keyword]
             if spec.destination_field is not None:
                 extra[spec.destination_field] = args[0]
-            recorded = {
-                key: value for key, value in kwargs.items() if key != spec.keyword
-            }
+            recorded = {key: value for key, value in kwargs.items() if key != spec.keyword}
             self.calls.append(
                 FilesystemCall(
                     name,
@@ -420,12 +417,10 @@ def _exercise_locked_profile(
     assert [source_id for source_id, _result in source.info_results] == [1, 2]
     assert [source_id for source_id, _result in source.ls_results] == [1, 2]
     assert all(
-        isinstance(result, Mapping) and result.get("type") == "directory"
-        for _source_id, result in source.info_results
+        isinstance(result, Mapping) and result.get("type") == "directory" for _source_id, result in source.info_results
     )
     assert all(
-        isinstance(result, list)
-        and set(result) == {f"{path}/.hidden", f"{path}/guide.md", f"{path}/notes.txt"}
+        isinstance(result, list) and set(result) == {f"{path}/.hidden", f"{path}/guide.md", f"{path}/notes.txt"}
         for _source_id, result in source.ls_results
     )
     assert len(source.errors) == 1
@@ -444,15 +439,9 @@ def _exercise_locked_profile(
     assert failing_exit.exception is error
     assert failing_exit.traceback is not None
     for source_id in (1, 2, 3):
-        loop_ids = [
-            event.loop_id for event in source.lifecycle if event.source_id == source_id
-        ]
-        loop_ids.extend(
-            call.loop_id for call in source.calls if call.source_id == source_id
-        )
-        exit_call = next(
-            call for call in source.exit_calls if call.source_id == source_id
-        )
+        loop_ids = [event.loop_id for event in source.lifecycle if event.source_id == source_id]
+        loop_ids.extend(call.loop_id for call in source.calls if call.source_id == source_id)
+        exit_call = next(call for call in source.exit_calls if call.source_id == source_id)
         loop_ids.append(exit_call.loop_id)
         assert len(set(loop_ids)) == 1
 
@@ -653,8 +642,7 @@ def _exercise_mkdir_locked_profile(
     verify_calls = [
         call
         for call in source.calls
-        if call.operation == "info"
-        and call.path in {new_dir, file_path, parent_file, missing_parent}
+        if call.operation == "info" and call.path in {new_dir, file_path, parent_file, missing_parent}
     ]
     assert len(verify_calls) == 1
     assert verify_calls[0].path == new_dir
@@ -702,10 +690,7 @@ def _exercise_mkdir_memory_over_eager_failure(
         missing_parent,
     ]
     assert all(call.create_parents is False for call in mkdir_calls)
-    assert any(
-        call.operation == "info" and call.path == missing_parent
-        for call in source.calls
-    )
+    assert any(call.operation == "info" and call.path == missing_parent for call in source.calls)
 
 
 def _exercise_mkdir_p_locked_profile(
@@ -769,15 +754,11 @@ def _exercise_mkdir_p_locked_profile(
     verify_calls = [
         call
         for call in source.calls
-        if call.operation == "info"
-        and call.path
-        in {new_dir, one_parent, existing_dir, file_path, parent_file, "/"}
+        if call.operation == "info" and call.path in {new_dir, one_parent, existing_dir, file_path, parent_file, "/"}
     ]
     assert len(verify_calls) >= 4
     assert len(source.errors) >= 1
-    assert {operation for _source_id, operation, _error in source.errors} == {
-        "makedirs"
-    }
+    assert {operation for _source_id, operation, _error in source.errors} == {"makedirs"}
 
 
 def _exercise_rmdir_locked_profile(
@@ -810,9 +791,7 @@ def _exercise_rmdir_locked_profile(
     assert len(rmdir_calls) == 2
     assert [call.path for call in rmdir_calls] == [empty_dir, parent_path]
     cli_info_calls = [
-        call
-        for call in source.calls
-        if call.operation == "info" and call.path in {empty_dir, parent_path, file_path}
+        call for call in source.calls if call.operation == "info" and call.path in {empty_dir, parent_path, file_path}
     ]
     assert len(cli_info_calls) == 5
     assert [call.path for call in cli_info_calls] == [
@@ -984,9 +963,7 @@ def _exercise_rm_force_profile(
     result = _invoke(app, "rm", ["-f", f"{source_name}:{missing_path}"])
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
-    assert [(call.operation, call.path) for call in source.calls[calls_before:]] == [
-        ("info", missing_path)
-    ]
+    assert [(call.operation, call.path) for call in source.calls[calls_before:]] == [("info", missing_path)]
 
 
 def _exercise_rm_verbose_profile(
@@ -1123,9 +1100,7 @@ def _exercise_cp_locked_profile(  # noqa: PLR0913 - matrix probe knobs.
     assert cp_calls[0].destination_path == copy_path
     assert cp_calls[1].path == file_path
     assert cp_calls[1].destination_path == f"{target_dir}/{file_name}"
-    assert not any(
-        call.operation in {"rm", "rm_file", "rmdir"} for call in source.calls
-    )
+    assert not any(call.operation in {"rm", "rm_file", "rmdir"} for call in source.calls)
 
 
 def _exercise_multi_source_cp_locked_profile(
@@ -1167,9 +1142,7 @@ def _exercise_multi_source_cp_locked_profile(
         (notes_path, f"{target_dir}/notes.txt"),
         (guide_path, f"{target_dir}/guide.md"),
     ]
-    assert not any(
-        call.operation in {"rm", "rm_file", "rmdir"} for call in source.calls
-    )
+    assert not any(call.operation in {"rm", "rm_file", "rmdir"} for call in source.calls)
 
 
 def _expected_stat_line(path: str, info: Mapping[str, object]) -> str:
@@ -1219,10 +1192,7 @@ def _expected_stat_line(path: str, info: Mapping[str, object]) -> str:
         f"{local.tm_hour:02d}:{local.tm_min:02d}:{local.tm_sec:02d} "
         f"{local.tm_year}"
     )
-    return (
-        f"{stat_module.filemode(mode)} {nlink} {owner} {group} "
-        f'{size} "{stamped}" {path}\n'
-    )
+    return f'{stat_module.filemode(mode)} {nlink} {owner} {group} {size} "{stamped}" {path}\n'
 
 
 def _exercise_stat_locked_profile(
@@ -1256,9 +1226,10 @@ def _exercise_stat_locked_profile(
         _expected_stat_line(file_path, recorded[file_path])
         + _expected_stat_line(directory_path, recorded[directory_path])
     )
-    assert [
-        call.path for call in source.calls[calls_before:] if call.operation == "info"
-    ] == [file_path, directory_path]
+    assert [call.path for call in source.calls[calls_before:] if call.operation == "info"] == [
+        file_path,
+        directory_path,
+    ]
     assert not any(
         call.operation in {"ls", "rm", "rm_file", "rmdir", "get_file", "cp_file"}
         for call in source.calls[calls_before:]
@@ -1280,9 +1251,7 @@ def _exercise_stat_incomplete_profile(
         f"stat: {source_name}:{path}: incompatible result\n",
     )
 
-    assert [
-        call.path for call in source.calls[calls_before:] if call.operation == "info"
-    ] == [path]
+    assert [call.path for call in source.calls[calls_before:] if call.operation == "info"] == [path]
     assert not any(
         call.operation in {"ls", "rm", "rm_file", "rmdir", "get_file", "cp_file"}
         for call in source.calls[calls_before:]

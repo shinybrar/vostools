@@ -217,12 +217,8 @@ class VOSpaceFileSystem(AsyncFileSystem):
 
     async def _discover_bindings(self) -> ServiceBindings:
         """Fetch and parse the VOSI capabilities document."""
-        response = await self._send_to_service(
-            "GET", self.endpoint_url + "/capabilities"
-        )
-        self._raise_for_status(
-            response, path="/capabilities", allowed=(transport.HTTP_OK,)
-        )
+        response = await self._send_to_service("GET", self.endpoint_url + "/capabilities")
+        self._raise_for_status(response, path="/capabilities", allowed=(transport.HTTP_OK,))
         return capabilities.parse_bindings(
             response.content,
             security_method=self._security_method(),
@@ -276,9 +272,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
                 body=body,
                 fault=errors.extract_fault(body),
                 path=path,
-                retry_after=errors.parse_retry_after(
-                    response.headers.get("retry-after")
-                ),
+                retry_after=errors.parse_retry_after(response.headers.get("retry-after")),
             )
 
     # -- node metadata and listing -------------------------------------------
@@ -518,14 +512,8 @@ class VOSpaceFileSystem(AsyncFileSystem):
         ):
             root, directories, files = item
             if isinstance(directories, dict):
-                directories = {
-                    name: coordination.canonical_info(info)
-                    for name, info in directories.items()
-                }
-                files = {
-                    name: coordination.canonical_info(info)
-                    for name, info in files.items()
-                }
+                directories = {name: coordination.canonical_info(info) for name, info in directories.items()}
+                files = {name: coordination.canonical_info(info) for name, info in files.items()}
             yield coordination.canonical_path(root), directories, files
 
     async def _cat(
@@ -546,9 +534,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
             **kwargs,
         )
         if isinstance(result, dict):
-            return {
-                coordination.canonical_path(key): value for key, value in result.items()
-            }
+            return {coordination.canonical_path(key): value for key, value in result.items()}
         return result
 
     async def _du(
@@ -602,9 +588,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
             target_validated = True
         callback: Callback = kwargs.get("callback", DEFAULT_CALLBACK)
         started = time.monotonic()
-        size = await self._download_file(
-            rpath, lpath, callback=callback, target_validated=target_validated
-        )
+        size = await self._download_file(rpath, lpath, callback=callback, target_validated=target_validated)
         _log_transfer("downloaded", rpath, lpath, size, started)
 
     async def _download_file(
@@ -676,11 +660,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
             msg = "on_error must be 'return' or 'raise'"
             raise ValueError(msg)
         effective_batch_size = batch_size if batch_size is not None else self.batch_size
-        if (
-            effective_batch_size is not None
-            and effective_batch_size != -1
-            and effective_batch_size <= 0
-        ):
+        if effective_batch_size is not None and effective_batch_size != -1 and effective_batch_size <= 0:
             msg = "batch_size must be a positive integer or -1"
             raise ValueError(msg)
         if count == 0:
@@ -688,19 +668,14 @@ class VOSpaceFileSystem(AsyncFileSystem):
 
         stripped = [self._strip_protocol(rpath) for rpath in paths]
         grouped: dict[str, list[tuple[int, int | None, int | None]]] = {}
-        for index, (stripped_path, start, end) in enumerate(
-            zip(stripped, start_list, end_list, strict=True)
-        ):
+        for index, (stripped_path, start, end) in enumerate(zip(stripped, start_list, end_list, strict=True)):
             grouped.setdefault(stripped_path, []).append((index, start, end))
 
         grouped_items = list(grouped.items())
         object_results = cast(
             "list[list[tuple[int, bytes]] | BaseException]",
             await _run_coros_in_chunks(
-                [
-                    _transfer.read_grouped_ranges(self, path, ranges)
-                    for path, ranges in grouped_items
-                ],
+                [_transfer.read_grouped_ranges(self, path, ranges) for path, ranges in grouped_items],
                 batch_size=effective_batch_size,
                 return_exceptions=on_error == "return",
             ),
@@ -736,14 +711,8 @@ class VOSpaceFileSystem(AsyncFileSystem):
             )
 
         normalized_path = self._strip_protocol(path)
-        binary_mode = (
-            mode.replace("t", "") if "b" in mode else mode.replace("t", "") + "b"
-        )
-        text_kwargs = {
-            key: kwargs.pop(key)
-            for key in ("encoding", "errors", "newline")
-            if key in kwargs
-        }
+        binary_mode = mode.replace("t", "") if "b" in mode else mode.replace("t", "") + "b"
+        text_kwargs = {key: kwargs.pop(key) for key in ("encoding", "errors", "newline") if key in kwargs}
         staged = cast(
             "staging.StagedWriteFile",
             super().open(
@@ -755,9 +724,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
                 **kwargs,
             ),
         )
-        return staging.wrap_write(
-            staged, normalized_path, mode, compression, **text_kwargs
-        )
+        return staging.wrap_write(staged, normalized_path, mode, compression, **text_kwargs)
 
     def _open(
         self,
@@ -839,9 +806,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
                 lpath,
                 coordination.normalize_hook_paths(rpath),
                 recursive=recursive,
-                callback=cast(
-                    "Callback", coordination.DeferredBranchCallback(callback, self)
-                ),
+                callback=cast("Callback", coordination.DeferredBranchCallback(callback, self)),
                 batch_size=batch_size,
                 maxdepth=maxdepth,
                 **kwargs,
@@ -859,10 +824,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
         if isinstance(path, str):
             normalized = coordination.normalize_hook_path(path)
         else:
-            normalized = {
-                coordination.normalize_hook_path(key): item
-                for key, item in path.items()
-            }
+            normalized = {coordination.normalize_hook_path(key): item for key, item in path.items()}
         async with coordination.write_scope(self):
             return await AsyncFileSystem._pipe(  # noqa: SLF001 - inherited seam
                 self._adapter,
@@ -913,9 +875,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
             raise FileExistsError(msg)
         await self._materialize_write_parent(rpath, state)
         started = time.monotonic()
-        size = await self._upload_file(
-            lpath, rpath, callback=callback, content_type=kwargs.get("content_type")
-        )
+        size = await self._upload_file(lpath, rpath, callback=callback, content_type=kwargs.get("content_type"))
         _log_transfer("uploaded", lpath, rpath, size, started)
 
     async def _upload_file(
@@ -974,12 +934,8 @@ class VOSpaceFileSystem(AsyncFileSystem):
         document = nodes.build_container_document(f"vos://{authority}{path}")
         url = bindings.require_nodes() + paths.encode_url_path(path)
         try:
-            response = await self._send_to_service(
-                "PUT", url, content=document, headers=nodes.XML_HEADERS
-            )
-            self._raise_for_status(
-                response, path=path, allowed=(transport.HTTP_OK, transport.HTTP_CREATED)
-            )
+            response = await self._send_to_service("PUT", url, content=document, headers=nodes.XML_HEADERS)
+            self._raise_for_status(response, path=path, allowed=(transport.HTTP_OK, transport.HTTP_CREATED))
         finally:
             self._invalidate(path)
 
@@ -1106,10 +1062,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
         if kwargs.get("maxdepth") is not None:
             msg = "rm(maxdepth=...) is unsupported"
             raise NotImplementedError(msg)
-        targets = [
-            self._strip_protocol(target)
-            for target in (path if isinstance(path, list) else [path])
-        ]
+        targets = [self._strip_protocol(target) for target in (path if isinstance(path, list) else [path])]
         if _overlapping(targets):
             # A target inside (or equal to) another must observe the earlier
             # removal, exactly as the sequential contract describes.
@@ -1117,10 +1070,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
                 await self._rm_one(target, recursive=recursive)
             return
         await coordination.run_bounded(
-            [
-                functools.partial(self._rm_one, target, recursive=recursive)
-                for target in targets
-            ],
+            [functools.partial(self._rm_one, target, recursive=recursive) for target in targets],
             coordination.effective_limit(
                 batch_size if batch_size is not None else self.batch_size,
                 len(targets),
@@ -1287,11 +1237,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
         """
         prefix = "/" if path == "/" else f"{path}/"
         parent = coordination.canonical_path(paths.parent(path))
-        stale = [
-            entry
-            for entry in list(self.dircache)
-            if entry in (path, parent) or entry.startswith(prefix)
-        ]
+        stale = [entry for entry in list(self.dircache) if entry in (path, parent) or entry.startswith(prefix)]
         for entry in stale:
             self.dircache.pop(entry, None)
 
@@ -1327,9 +1273,7 @@ class VOSpaceFileSystem(AsyncFileSystem):
         sync(self.loop, self.aclose)
 
 
-def _log_transfer(
-    outcome: str, source: str, destination: str, size: int, started: float
-) -> None:
+def _log_transfer(outcome: str, source: str, destination: str, size: int, started: float) -> None:
     """Emit the one INFO record for a completed single-file transfer."""
     seconds = time.monotonic() - started
     logger.info(
@@ -1367,16 +1311,11 @@ def _canonical_result(
 ) -> list[str] | dict[str, dict[str, Any]]:
     """Retain canonical-path provenance across a find or glob result."""
     if isinstance(result, dict):
-        return {
-            coordination.canonical_path(key): coordination.canonical_info(info)
-            for key, info in result.items()
-        }
+        return {coordination.canonical_path(key): coordination.canonical_info(info) for key, info in result.items()}
     return [coordination.canonical_path(item) for item in result]
 
 
-def _broadcast(
-    value: int | Sequence[int | None] | None, count: int
-) -> list[int | None]:
+def _broadcast(value: int | Sequence[int | None] | None, count: int) -> list[int | None]:
     """Broadcast a scalar range bound to every path, or return the sequence."""
     if value is None or isinstance(value, int):
         return [value] * count

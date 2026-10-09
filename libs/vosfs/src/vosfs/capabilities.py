@@ -81,9 +81,7 @@ class ServiceBindings:
         return self.sync_url
 
 
-def parse_bindings(
-    data: bytes, *, security_method: str, endpoint_url: str = ""
-) -> ServiceBindings:
+def parse_bindings(data: bytes, *, security_method: str, endpoint_url: str = "") -> ServiceBindings:
     """Resolve the node and sync bindings for the configured credential.
 
     Args:
@@ -113,33 +111,23 @@ def parse_bindings(
     )
 
 
-def _resolve(
-    root: ET.Element, standard_id: str, security_method: str, *, use: str
-) -> str | None:
+def _resolve(root: ET.Element, standard_id: str, security_method: str, *, use: str) -> str | None:
     """Resolve one capability's access URL for the configured credential."""
     capability = _find_capability(root, standard_id)
     if capability is None:
         return None
     matched = [
-        interface
-        for interface in _standard_param_http_interfaces(capability)
-        if _accepts(interface, security_method)
+        interface for interface in _standard_param_http_interfaces(capability) if _accepts(interface, security_method)
     ]
     if not matched:
-        msg = (
-            f"the {standard_id} binding does not advertise a supported security "
-            f"method for the configured credential"
-        )
+        msg = f"the {standard_id} binding does not advertise a supported security method for the configured credential"
         raise PermissionError(msg)
     return _access_url(matched[0], use=use)
 
 
 def _find_capability(root: ET.Element, standard_id: str) -> ET.Element | None:
     for element in root.iter():
-        if (
-            local_name(element.tag) == "capability"
-            and element.get("standardID") == standard_id
-        ):
+        if local_name(element.tag) == "capability" and element.get("standardID") == standard_id:
             return element
     return None
 
@@ -147,10 +135,7 @@ def _find_capability(root: ET.Element, standard_id: str) -> ET.Element | None:
 def _standard_param_http_interfaces(capability: ET.Element) -> list[ET.Element]:
     interfaces = []
     for element in capability:
-        if (
-            local_name(element.tag) != "interface"
-            or element.get("role") != _STANDARD_ROLE
-        ):
+        if local_name(element.tag) != "interface" or element.get("role") != _STANDARD_ROLE:
             continue
         xsi_type = element.get(_XSI_TYPE_ATTR, "")
         if xsi_type.rsplit(":", 1)[-1] == _PARAM_HTTP:
@@ -160,11 +145,7 @@ def _standard_param_http_interfaces(capability: ET.Element) -> list[ET.Element]:
 
 def _accepts(interface: ET.Element, security_method: str) -> bool:
     """Whether an interface advertises the configured credential's method."""
-    advertised = {
-        element.get("standardID", "")
-        for element in interface
-        if local_name(element.tag) == "securityMethod"
-    }
+    advertised = {element.get("standardID", "") for element in interface if local_name(element.tag) == "securityMethod"}
     advertised.discard("")
     if security_method == ANONYMOUS_METHOD:
         return not advertised

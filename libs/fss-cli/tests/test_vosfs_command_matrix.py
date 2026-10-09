@@ -7,9 +7,9 @@ from urllib.parse import quote, unquote
 
 import httpx
 import pytest
-from fsspec_cli import App
-
 from vosfs import VOSpaceFileSystem
+
+from fsspec_cli import App
 
 from ._matrix_support import (
     _exercise_cat_profile,
@@ -122,32 +122,18 @@ class _CatMockTransport(httpx.MockTransport):
         call = (request.method, request.url.path)
         self.requests.append(call)
         handlers = {
-            ("GET", "/arc/capabilities"): lambda: httpx.Response(
-                200, content=_SYNC_CAPABILITIES
-            ),
-            ("GET", "/arc/nodes/docs/blob.bin"): lambda: httpx.Response(
-                200, content=_BLOB
-            ),
-            ("GET", "/arc/nodes/docs/blob.bin.missing"): lambda: httpx.Response(
-                404, text="not found"
-            ),
+            ("GET", "/arc/capabilities"): lambda: httpx.Response(200, content=_SYNC_CAPABILITIES),
+            ("GET", "/arc/nodes/docs/blob.bin"): lambda: httpx.Response(200, content=_BLOB),
+            ("GET", "/arc/nodes/docs/blob.bin.missing"): lambda: httpx.Response(404, text="not found"),
             ("POST", "/arc/synctrans"): lambda: httpx.Response(
                 303,
-                headers={
-                    "Location": (
-                        f"{_BASE_URL}/details?t={quote(_target_path(request.content))}"
-                    )
-                },
+                headers={"Location": (f"{_BASE_URL}/details?t={quote(_target_path(request.content))}")},
             ),
             ("GET", "/arc/details"): lambda: httpx.Response(
                 200,
-                content=_transfer_details(
-                    f"{_BASE_URL}/files?p={quote(unquote(request.url.params['t']))}"
-                ),
+                content=_transfer_details(f"{_BASE_URL}/files?p={quote(unquote(request.url.params['t']))}"),
             ),
-            ("GET", "/arc/files"): lambda: self._file_response(
-                unquote(request.url.params["p"])
-            ),
+            ("GET", "/arc/files"): lambda: self._file_response(unquote(request.url.params["p"])),
         }
         handler = handlers.get(call)
         if handler is None:
@@ -322,9 +308,7 @@ def test_native_vosfs_plain_ls_profile_uses_only_mocked_transport() -> None:
     assert all(fs._pool.closed is True for fs in source.filesystems)
     assert [call.source_id for call in source.close_calls] == [1, 2, 3]
     for close_call in source.close_calls:
-        exit_call = next(
-            call for call in source.exit_calls if call.source_id == close_call.source_id
-        )
+        exit_call = next(call for call in source.exit_calls if call.source_id == close_call.source_id)
         assert close_call.loop_id == exit_call.loop_id
     assert [transport.requests for transport in transports] == [
         [
@@ -400,8 +384,7 @@ def test_native_vosfs_plain_cat_profile_uses_only_mocked_transport() -> None:
     assert [call.source_id for call in source.close_calls] == [1, 2, 3]
     assert all(transport.closed for transport in transports)
     assert all(
-        ("GET", "/arc/files") in transport.requests
-        or ("GET", "/arc/nodes/docs/blob.bin.missing") in transport.requests
+        ("GET", "/arc/files") in transport.requests or ("GET", "/arc/nodes/docs/blob.bin.missing") in transport.requests
         for transport in transports
     )
 
@@ -476,9 +459,7 @@ def test_native_vosfs_rm_d_profile_uses_only_mocked_transport() -> None:
 
     assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
     assert all(isinstance(fs, VOSpaceFileSystem) for fs in source.filesystems)
-    assert [call.path for call in source.calls if call.operation == "rmdir"] == [
-        "/docs/empty"
-    ]
+    assert [call.path for call in source.calls if call.operation == "rmdir"] == ["/docs/empty"]
     assert all(transport.closed for transport in transports)
 
 
@@ -566,17 +547,12 @@ class _CpMockTransport(httpx.MockTransport):
             length = ""
             if kind == "data":
                 length = (
-                    '<vos:property uri="ivo://ivoa.net/vospace/core#length">'
-                    f"{len(self.blobs[child])}</vos:property>"
+                    f'<vos:property uri="ivo://ivoa.net/vospace/core#length">{len(self.blobs[child])}</vos:property>'
                 )
             children.append(
                 f'<vos:node xsi:type="{xsi}" uri="vos://{_AUTHORITY}{child}">'
                 f"<vos:properties>{length}</vos:properties>"
-                + (
-                    f"<vos:target>vos://{_AUTHORITY}/docs/notes.txt</vos:target>"
-                    if kind == "link"
-                    else ""
-                )
+                + (f"<vos:target>vos://{_AUTHORITY}/docs/notes.txt</vos:target>" if kind == "link" else "")
                 + "</vos:node>"
             )
         body = "".join(children)
@@ -614,18 +590,12 @@ class _CpMockTransport(httpx.MockTransport):
         if call == ("POST", "/arc/synctrans"):
             return httpx.Response(
                 303,
-                headers={
-                    "Location": (
-                        f"{_BASE_URL}/details?t={quote(_target_path(request.content))}"
-                    )
-                },
+                headers={"Location": (f"{_BASE_URL}/details?t={quote(_target_path(request.content))}")},
             )
         if call == ("GET", "/arc/details"):
             return httpx.Response(
                 200,
-                content=_transfer_details(
-                    f"{_BASE_URL}/files?p={quote(unquote(request.url.params['t']))}"
-                ),
+                content=_transfer_details(f"{_BASE_URL}/files?p={quote(unquote(request.url.params['t']))}"),
             )
         if call[0] == "GET" and call[1] == "/arc/files":
             return self._file_response(unquote(request.url.params["p"]))

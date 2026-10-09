@@ -10,6 +10,7 @@ from typing import Any
 
 import pytest
 import typer.main
+
 from fsspec_cli import App
 
 from ._support import _source_must_not_run
@@ -25,8 +26,7 @@ def _undocumented_options(command: Any) -> list[str]:
     return [
         parameter.opts[0]
         for parameter in command.params
-        if any(spelling.startswith("-") for spelling in parameter.opts)
-        and not getattr(parameter, "help", None)
+        if any(spelling.startswith("-") for spelling in parameter.opts) and not getattr(parameter, "help", None)
     ]
 
 

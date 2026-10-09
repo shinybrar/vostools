@@ -17,9 +17,7 @@ from ._process_support import (
 
 _SIGPIPE_EXIT = 141  # 128 + SIGPIPE (13): sole broken pipe on stdout.
 _NATIVE_NEWLINE = os.linesep.encode()
-_OUTPUT_ERROR = (
-    b"cat: output: output failure (OSError): disk\\\\bad\\x0aline" + _NATIVE_NEWLINE
-)
+_OUTPUT_ERROR = b"cat: output: output failure (OSError): disk\\\\bad\\x0aline" + _NATIVE_NEWLINE
 _CHILD_PATH = Path(__file__).with_name("_cat_process_child.py")
 
 
@@ -226,9 +224,7 @@ def test_cat_output_failure_keeps_already_known_backend_diagnostics() -> None:
 
     assert result.returncode == 1
     assert result.stdout == b""
-    assert result.stderr == (
-        b"cat: memory:/missing: not found" + _NATIVE_NEWLINE + _OUTPUT_ERROR
-    )
+    assert result.stderr == (b"cat: memory:/missing: not found" + _NATIVE_NEWLINE + _OUTPUT_ERROR)
 
 
 def test_public_seam_cat_operand_free_reads_binary_stdin_pipe() -> None:
