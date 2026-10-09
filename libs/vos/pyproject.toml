@@ -6,7 +6,7 @@ build-backend = "uv_build"
 name = "vos"
 version = "3.7"
 description = "CADC VOS Class Libraries"
-readme = "README.rst"
+readme = "README.md"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
 authors = [{ name = "JJ Kavelaars, Canadian Astronomy Data Centre", email = "cadc@nrc-cnrc.gc.ca" }]

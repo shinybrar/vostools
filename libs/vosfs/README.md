@@ -1,6 +1,6 @@
 # vosfs
 
-[![CI](https://github.com/opencadc/vostools/actions/workflows/ci.yml/badge.svg)](https://github.com/opencadc/vostools/actions/workflows/ci.yml)
+[![CI](https://github.com/opencadc/vostools/actions/workflows/quality.yml/badge.svg)](https://github.com/opencadc/vostools/actions/workflows/quality.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
