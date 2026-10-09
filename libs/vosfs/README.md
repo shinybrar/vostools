@@ -66,12 +66,12 @@ The design contract for `fsspec-cli` lives in
 [`docs/design/fsspec-cli/`](docs/design/fsspec-cli/) and the architecture
 decisions in [`docs/adr/`](../../docs/adr/).
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) to work on the project. Public
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) to work on the project. Public
 documentation source lives under `docs/user/`;
-validate it locally with:
+validate it locally from the repository root with:
 
 ```bash
-uv run zensical build --strict --clean
+uv run --all-packages zensical build --strict --clean
 ```
 
 ## License
