@@ -71,10 +71,8 @@ with the scopes ``vos``, ``vosfs``, ``fss-cli`` or ``repo``, for example
 
 Continuous integration
 ~~~~~~~~~~~~~~~~~~~~~~
-``.github/workflows/ci.yml`` runs the hooks above, builds every package, tests each changed package on
-Python 3.10 to 3.14 (and macOS on 3.12), and tests the built wheel outside the workspace. The ``Required`` job
-summarizes the run and is the only check branch protection needs. To run the wheel check locally:
-
-::
-
-    python3 .github/scripts/wheel_gate.py vos 3.12
+``quality.yml`` always runs the hooks, builds every package and checks distribution metadata; its
+``Required`` job is the only check branch protection needs. Each package has its own workflow
+(``ci-vos.yml``, and later ``ci-vosfs.yml`` / ``ci-fss-cli.yml``) that GitHub starts only when that
+package's tree or a shared workspace file changes. Those workflows test on Python 3.10 to 3.14
+(and macOS on 3.12).
