@@ -9,8 +9,6 @@ package = false
 
 [tool.uv.workspace]
 members = ["libs/*"]
-# Imported from shinybrar/vosfs; held out of the workspace, ty and pre-commit until they are joined.
-exclude = ["libs/vosfs", "libs/fss-cli"]
 
 [dependency-groups]
 dev = [
@@ -55,13 +53,18 @@ docstring-code-format = true
 
 [tool.ty.src]
 include = ["libs/*/src"]
-exclude = ["libs/vosfs", "libs/fss-cli"]
 
 # vos type checking ratchet: these rules report as warnings in vos until its findings are
 # fixed; every other rule is an error. Remove a rule from the list once vos is clean for it.
 [[tool.ty.overrides]]
 include = ["libs/vos/src/**"]
 rules = { invalid-argument-type = "warn", no-matching-overload = "warn", unresolved-attribute = "warn", unsupported-operator = "warn" }
+
+# vosfs ratchet: its _walk and _rm hooks do not yet match the signatures ty infers for
+# fsspec's AsyncFileSystem. Drop this override once they do.
+[[tool.ty.overrides]]
+include = ["libs/vosfs/src/**"]
+rules = { invalid-method-override = "warn" }
 
 [tool.ty.terminal]
 error-on-warning = false

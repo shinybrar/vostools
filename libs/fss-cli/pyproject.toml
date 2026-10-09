@@ -31,13 +31,14 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/shinybrar/vosfs"
-Repository = "https://github.com/shinybrar/vosfs"
-Issues = "https://github.com/shinybrar/vosfs/issues"
-Changelog = "https://github.com/shinybrar/vosfs/blob/main/src/fsspec-cli/CHANGELOG.md"
+Homepage = "https://github.com/opencadc/vostools"
+Documentation = "https://opencadc.github.io/vostools/"
+Repository = "https://github.com/opencadc/vostools"
+Issues = "https://github.com/opencadc/vostools/issues"
+Changelog = "https://github.com/opencadc/vostools/blob/main/libs/fss-cli/CHANGELOG.md"
 
 [build-system]
-requires = ["uv_build>=0.11.29,<0.12.0"]
+requires = ["uv_build>=0.11.29,<0.13"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -55,3 +56,25 @@ vosfs = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# The shared root policy at 88 columns until the 120-column reformat.
+[tool.ruff]
+extend = "../../pyproject.toml"
+line-length = 88
+
+# Lint ratchet: rules that are new since the import and not yet fixed here. Remove a
+# code once the package is clean for it.
+[tool.ruff.lint]
+ignore = [
+    "I001",    # Import order moves with first-party detection; fixed by the reformat.
+    "ISC004",  # Implicit concatenation in test collections; needs parentheses.
+    "PLR0917", # Positional internal helpers; needs keyword-only parameters.
+]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"src/fsspec_cli/*.py" = [
+    # fsspec's async filesystem API is underscore-prefixed by convention
+    # (`_info`, `_ls`, `_cat_file`, ...). Awaiting those hooks is the documented
+    # way to drive an AsyncFileSystem, not private-member access.
+    "SLF001",
+]
