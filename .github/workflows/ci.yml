@@ -1,0 +1,181 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      packages: ${{ steps.select.outputs.packages }}
+      test-matrix: ${{ steps.select.outputs.test-matrix }}
+      gate-matrix: ${{ steps.select.outputs.gate-matrix }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select packages
+        id: select
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: python3 .github/scripts/changed_packages.py "$BASE_SHA"
+
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Check exact lockfile
+        run: uv lock --check
+
+      - name: Run all pre-commit hooks
+        run: uv run --locked --all-packages pre-commit run --all-files --show-diff-on-failure
+
+      - name: Build every package
+        run: uv build --no-sources --all-packages --out-dir dist
+
+      - name: Check distribution metadata
+        run: uvx twine check --strict dist/*
+
+  pr-title:
+    name: Pull request title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Check the title is a conventional commit
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: uv run --locked --only-group dev cz check --message "$TITLE"
+
+  test:
+    name: Test ${{ matrix.package }} (${{ matrix.os }}, Python ${{ matrix.python }})
+    needs: changes
+    if: needs.changes.outputs.packages != '[]'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.changes.outputs.test-matrix) }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          cache-suffix: py${{ matrix.python }}
+          python-version: ${{ matrix.python }}
+
+      - name: Run tests
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: >-
+          uv run --locked --package "$PACKAGE" pytest "libs/$PACKAGE/tests"
+          --cov --cov-config "libs/$PACKAGE/pyproject.toml" --cov-report "xml:coverage-$PACKAGE.xml"
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: coverage-${{ matrix.package }}.xml
+          flags: ${{ matrix.package }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  wheel-gate:
+    name: Installed wheel ${{ matrix.package }} (Python ${{ matrix.python }})
+    needs: changes
+    if: needs.changes.outputs.packages != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.changes.outputs.gate-matrix) }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+          cache-suffix: gate-py${{ matrix.python }}
+
+      - name: Test the installed wheel outside the workspace
+        env:
+          PACKAGE: ${{ matrix.package }}
+          PYTHON: ${{ matrix.python }}
+        run: python3 .github/scripts/wheel_gate.py "$PACKAGE" "$PYTHON"
+
+  required:
+    name: Required
+    if: always()
+    needs: [changes, quality, pr-title, test, wheel-gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every job to succeed or be skipped on purpose
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          QUALITY: ${{ needs.quality.result }}
+          PR_TITLE: ${{ needs.pr-title.result }}
+          TEST: ${{ needs.test.result }}
+          WHEEL_GATE: ${{ needs.wheel-gate.result }}
+        run: |
+          status=0
+          for job in CHANGES QUALITY; do
+            if [[ "${!job}" != "success" ]]; then echo "$job concluded ${!job}" >&2; status=1; fi
+          done
+          # Skipped is expected: pr-title runs only on pull requests, and test and wheel-gate
+          # are skipped when no package changed.
+          for job in PR_TITLE TEST WHEEL_GATE; do
+            if [[ "${!job}" != "success" && "${!job}" != "skipped" ]]; then echo "$job concluded ${!job}" >&2; status=1; fi
+          done
+          exit "$status"

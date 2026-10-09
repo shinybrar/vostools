@@ -23,15 +23,20 @@ dev = [
 # select (see libs/vos/pyproject.toml) and drops the override once it complies.
 [tool.ruff]
 line-length = 120
+per-file-target-version = { ".github/scripts/*.py" = "py312" } # CI scripts run on the runner's Python.
 
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
     "COM812", # Conflicts with the formatter.
+    "CPY001", # Each package's LICENSE file is authoritative; no per-file headers.
     "ISC001", # Conflicts with the formatter.
 ]
 
 [tool.ruff.lint.per-file-ignores]
+".github/scripts/*.py" = [
+    "INP001", # Standalone CI scripts, not a package.
+]
 "**/tests/**/*.py" = [
     "ANN",     # Tests are outside the ty gate.
     "D",       # Tests describe behavior through their names.
