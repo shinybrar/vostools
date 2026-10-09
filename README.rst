@@ -89,8 +89,9 @@ with the scopes ``vos``, ``vosfs``, ``fss-cli`` or ``repo``, for example
 
 Continuous integration
 ~~~~~~~~~~~~~~~~~~~~~~
-``quality.yml`` always runs the hooks, builds every package and checks distribution metadata; its
-``Required`` job is the only check branch protection needs. Each package has its own workflow
-(``ci-vos.yml``, and later ``ci-vosfs.yml`` / ``ci-fss-cli.yml``) that GitHub starts only when that
-package's tree or a shared workspace file changes. Those workflows test on Python 3.10 to 3.14
-(and macOS on 3.12).
+``quality.yml`` always runs the hooks, repository contract tests, a strict Zensical build, package
+builds and distribution metadata checks; its ``Required`` job is the only check branch protection
+needs. Each package has its own path-filtered workflow (``ci-vos.yml``, ``ci-vosfs.yml``,
+``ci-fss-cli.yml``) that GitHub starts only when that package's tree or a shared workspace file
+changes. ``ci-fss-cli.yml`` also watches ``libs/vosfs/**`` because fss-cli's tests depend on vosfs.
+Those workflows test on Python 3.10 to 3.14 (and macOS on 3.12).

@@ -1,11 +1,12 @@
-# Test vos when its tree or shared workspace files change.
-name: vos
+# Test fsspec-cli when its tree, vosfs (a test dependency), or shared files change.
+name: fss-cli
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - "libs/vos/**"
+      - "libs/fss-cli/**"
+      - "libs/vosfs/**"
       - "pyproject.toml"
       - "uv.lock"
       - ".pre-commit-config.yaml"
@@ -14,7 +15,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "libs/vos/**"
+      - "libs/fss-cli/**"
+      - "libs/vosfs/**"
       - "pyproject.toml"
       - "uv.lock"
       - ".pre-commit-config.yaml"
@@ -28,7 +30,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: vos-${{ github.event.pull_request.number || github.ref }}
+  group: fss-cli-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -36,7 +38,7 @@ jobs:
     name: Tests
     uses: ./.github/workflows/reusable-package.yml
     with:
-      package: vos
-      distribution: vos
+      package: fss-cli
+      distribution: fsspec-cli
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -80,10 +80,8 @@ uv run --package fsspec-cli pytest libs/fss-cli/tests
 uv build --no-sources --all-packages
 ```
 
-`python3 .github/scripts/wheel_gate.py <package> <python>` repeats CI's
-installed-wheel check for one package. If a hook changes files, review the
-changes, stage them, and run the gate again. The pull request must pass the
-same required CI checks before merge.
+If a hook changes files, review the changes, stage them, and run the gate
+again. The pull request must pass the same required CI checks before merge.
 
 ## Commit messages
 
