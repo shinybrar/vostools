@@ -14,6 +14,8 @@ import getpass
 import hashlib
 import tempfile
 
+pytestmark = pytest.mark.integration
+
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_DIR = os.path.join(THIS_DIR, "data")
 

@@ -40,7 +40,7 @@ URL = metadata.get('url', 'http://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca')
 VERSION = metadata.get('version', 'none')
 
 # generate the version file
-with open(os.path.join(PACKAGENAME, 'version.py'), 'w') as f:
+with open(os.path.join('src', PACKAGENAME, 'version.py'), 'w') as f:
     f.write('version = \'{} {}\'\n'.format(PACKAGENAME, VERSION))	
 
 # Treat everything in scripts except README.rst as a script to be installed
@@ -80,7 +80,7 @@ class PyIntTest(TestCommand):
 
     def __init__(self, dist, **kw):
         TestCommand.__init__(self, dist, **kw)
-        self.pytest_args = ['intTest']
+        self.pytest_args = ['tests/integration']
 
     def run_tests(self):
         # import here, cause outside the eggs aren't loaded
@@ -96,7 +96,7 @@ class PyAllTest(TestCommand):
 
     def __init__(self, dist, **kw):
         TestCommand.__init__(self, dist, **kw)
-        self.pytest_args = ['--cov', PACKAGENAME, PACKAGENAME, 'intTest']
+        self.pytest_args = ['--cov', PACKAGENAME, 'tests', 'tests/integration']
 
     def run_tests(self):
         # import here, cause outside the eggs aren't loaded
@@ -128,8 +128,9 @@ setup(name=PACKAGENAME,
       setup_requires=['pytest-runner'],
       entry_points=entry_points,
       python_requires='>=3.10, <4.0',
-      packages=find_packages(),
-      package_data={PACKAGENAME: ['data/*', 'tests/data/*', '*/data/*', '*/tests/data/*']},
+      package_dir={'': 'src'},
+      packages=find_packages('src'),
+      package_data={PACKAGENAME: ['data/*']},
       classifiers=[
         'Natural Language :: English',
         'License :: OSI Approved :: GNU Affero General Public License v3',

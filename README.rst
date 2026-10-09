@@ -51,7 +51,7 @@ not report errors
 
 ::
 
-     flake8 vos/vos
+     cd libs/vos && flake8 src tests
 
 
 Testing with tox
@@ -63,19 +63,19 @@ they are available in the system):
 
 ::
 
-    cd ./vos && tox
+    cd ./libs/vos && tox
 
 To test a specific version:
 
 ::
 
-    cd ./vos && tox -e py310
+    cd ./libs/vos && tox -e py310
 
 
 To list all the available environments:
 
 ::
 
-    cd ./vos && tox -a
+    cd ./libs/vos && tox -a
 
 
