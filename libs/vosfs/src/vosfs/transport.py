@@ -1,0 +1,184 @@
+"""HTTPX client pool and lifecycle for the vos filesystem.
+
+HTTPX is the sole production HTTP client. The pool is keyed by TLS
+configuration and built lazily and concurrency-safely: one validating
+no-client-certificate client for anonymous, bearer, and pre-authorized
+requests, and — when a certificate is configured — one validating client whose
+fresh ``ssl.SSLContext`` loads the combined PEM. Bearer credentials are
+per-request headers, never pool keys.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import ssl
+from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
+
+import httpx
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+# Default HTTP timeouts in seconds, fixed by the contract (section 3).
+DEFAULT_TIMEOUTS: dict[str, float] = {
+    "connect": 10.0,
+    "read": 60.0,
+    "write": 60.0,
+    "pool": 10.0,
+}
+
+
+def build_timeout(overrides: Mapping[str, float] | None) -> httpx.Timeout:
+    """Return an ``httpx.Timeout`` from the defaults plus any overrides."""
+    values = dict(DEFAULT_TIMEOUTS)
+    if overrides:
+        values.update(overrides)
+    return httpx.Timeout(
+        connect=values["connect"],
+        read=values["read"],
+        write=values["write"],
+        pool=values["pool"],
+    )
+
+
+#: Connection limits. httpx keeps only 20 idle connections by default, so a
+#: burst of concurrent transfers reconnects (and repeats TLS handshakes) for
+#: every request beyond 20; keeping as many idle as may be open avoids that.
+POOL_LIMITS = httpx.Limits(max_connections=100, max_keepalive_connections=100)
+
+HTTP_OK = 200
+HTTP_CREATED = 201
+HTTP_NO_CONTENT = 204
+HTTP_PARTIAL_CONTENT = 206
+HTTP_RANGE_NOT_SATISFIABLE = 416
+HTTP_SEE_OTHER = 303
+HTTP_PRECONDITION_FAILED = 412
+IDENTITY_ENCODING = {"Accept-Encoding": "identity"}
+
+
+def same_origin(a: str, b: str) -> bool:
+    """Whether two URLs share the same scheme, host, and (defaulted) port."""
+
+    def origin(url: str) -> tuple[str, str | None, int]:
+        parts = urlsplit(url)
+        port = parts.port or (443 if parts.scheme == "https" else 80)
+        return (parts.scheme, parts.hostname, port)
+
+    return origin(a) == origin(b)
+
+
+class ClientPool:
+    """A lazily-populated, TLS-keyed pool of HTTPX async clients.
+
+    At most one client is created per TLS key per pool and event loop. Every
+    client disables redirects, client-level auth, and transport retries, and
+    holds no cookie jar: response cookies are discarded after each send so no
+    ``Cookie`` header is ever derived from a prior response.
+    """
+
+    def __init__(
+        self,
+        *,
+        certfile: str | None,
+        trust_env: bool,
+        timeout: httpx.Timeout,
+        injected_transport: httpx.AsyncBaseTransport | None,
+    ) -> None:
+        """Configure the pool; no client is built until first use."""
+        self._certfile = certfile
+        self._trust_env = trust_env
+        self._timeout = timeout
+        self._injected = injected_transport
+        self._clients: dict[bool, httpx.AsyncClient] = {}
+        self._lock = asyncio.Lock()
+        self._closed = False
+
+    def _ensure_open(self) -> None:
+        if self._closed:
+            msg = "I/O operation on closed filesystem"
+            raise ValueError(msg)
+
+    async def client(self, *, use_cert: bool = False) -> httpx.AsyncClient:
+        """Return the pooled client for the requested TLS configuration.
+
+        Raises:
+            ValueError: If the pool is closed, or a certificate client is
+                requested without a configured certificate.
+        """
+        self._ensure_open()
+        if use_cert and self._certfile is None:
+            msg = "no certificate is configured for a certificate transfer"
+            raise ValueError(msg)
+        if use_cert in self._clients:
+            return self._clients[use_cert]
+        async with self._lock:
+            # Re-check under the lock: a concurrent ``aclose`` may have run
+            # between the fast-path check and lock acquisition, so a client must
+            # never be built (and leaked) into an already-closed pool.
+            self._ensure_open()
+            if use_cert not in self._clients:
+                self._clients[use_cert] = self._build(use_cert=use_cert)
+            return self._clients[use_cert]
+
+    def _build(self, *, use_cert: bool) -> httpx.AsyncClient:
+        """Construct one client for the given TLS configuration."""
+        return httpx.AsyncClient(
+            transport=self._injected,
+            verify=(
+                self._certificate_context()
+                if use_cert and self._injected is None
+                else True
+            ),
+            follow_redirects=False,
+            trust_env=self._trust_env,
+            timeout=self._timeout,
+            limits=POOL_LIMITS,
+            auth=None,
+        )
+
+    def _certificate_context(self) -> ssl.SSLContext:  # pragma: no cover
+        """Load the certificate into every direct and proxy TLS transport."""
+        certfile = self._certfile
+        if certfile is None:
+            msg = "no certificate is configured for a certificate transfer"
+            raise ValueError(msg)
+        context = ssl.create_default_context()
+        context.load_cert_chain(certfile)
+        return context
+
+    async def send(
+        self,
+        request: httpx.Request,
+        *,
+        use_cert: bool = False,
+        stream: bool = False,
+    ) -> httpx.Response:
+        """Send one request through the pooled client, holding no cookies.
+
+        The client's cookie jar is cleared after every send so a ``Set-Cookie``
+        response can never cause a later request to carry a ``Cookie`` header.
+        """
+        client = await self.client(use_cert=use_cert)
+        response = await client.send(request, stream=stream)
+        client.cookies.clear()
+        return response
+
+    async def aclose(self) -> None:
+        """Close every realized client and mark the pool closed (idempotent).
+
+        The closed flag is set and the client map is drained under the same lock
+        that guards lazy client creation, so a waiter cannot build and store an
+        open client after the pool has been closed.
+        """
+        async with self._lock:
+            self._closed = True
+            clients = list(self._clients.values())
+            self._clients.clear()
+        for client in clients:
+            await client.aclose()
+
+    @property
+    def closed(self) -> bool:
+        """Whether the pool has been closed."""
+        return self._closed

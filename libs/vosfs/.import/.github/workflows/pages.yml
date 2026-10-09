@@ -1,0 +1,167 @@
+name: Pages
+
+on:
+  repository_dispatch:
+    types: [docs-publish]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.event.client_payload.target }}-${{ github.event.client_payload.tag_name || github.event.client_payload.sha }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate documentation dispatch
+        id: target
+        env:
+          RELEASE_TAG: ${{ github.event.client_payload.tag_name }}
+          TARGET: ${{ github.event.client_payload.target }}
+          VALIDATED_SHA: ${{ github.event.client_payload.sha }}
+        run: |
+          set -euo pipefail
+
+          case "$TARGET" in
+            dev)
+              if ! [[ "$VALIDATED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+                echo "dev documentation requires a full commit SHA" >&2
+                exit 1
+              fi
+              if ! [[ -z "$RELEASE_TAG" ]]; then
+                echo "dev documentation must not include a release tag" >&2
+                exit 1
+              fi
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              echo "version=dev" >> "$GITHUB_OUTPUT"
+              ;;
+            release)
+              if ! [[ "$VALIDATED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+                echo "release documentation requires a full commit SHA" >&2
+                exit 1
+              fi
+              if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+                echo "release tag must be an exact vX.Y.Z tag" >&2
+                exit 1
+              fi
+              echo "release=true" >> "$GITHUB_OUTPUT"
+              echo "version=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "documentation target must be dev or release" >&2
+              exit 1
+              ;;
+          esac
+          echo "ref=$VALIDATED_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Check out documentation source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          ref: ${{ steps.target.outputs.ref }}
+
+      - name: Verify documentation source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.client_payload.tag_name }}
+          TARGET: ${{ github.event.client_payload.target }}
+          VALIDATED_SHA: ${{ github.event.client_payload.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$VALIDATED_SHA"
+
+          if [[ "$TARGET" == "release" ]]; then
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+              | jq -e --arg tag "$RELEASE_TAG" \
+                '.tag_name == $tag and .draft == false' >/dev/null
+            test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$VALIDATED_SHA"
+          fi
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Install locked documentation toolchain
+        run: uv sync --locked
+
+      - name: Publish documentation
+        env:
+          RELEASE: ${{ steps.target.outputs.release }}
+          VALIDATED_SHA: ${{ github.event.client_payload.sha }}
+          VERSION: ${{ steps.target.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for attempt in 1 2 3; do
+            if [[ "$RELEASE" == "false" ]]; then
+              git fetch --no-tags origin main:refs/remotes/origin/main
+              if [[ "$VALIDATED_SHA" != "$(git rev-parse origin/main)" ]]; then
+                echo "dev documentation superseded by newer main; skipping"
+                exit 0
+              fi
+            fi
+
+            if [[ -n "$(git ls-remote --heads origin refs/heads/gh-pages)" ]]; then
+              git fetch --no-tags origin \
+                gh-pages:refs/remotes/origin/gh-pages
+              git update-ref refs/heads/gh-pages refs/remotes/origin/gh-pages
+            else
+              git update-ref -d refs/remotes/origin/gh-pages
+              git update-ref -d refs/heads/gh-pages
+            fi
+
+            uv run --locked zensical build --strict --clean
+            if [[ "$RELEASE" == "true" ]]; then
+              uv run --locked mike deploy \
+                --config-file zensical.toml \
+                --remote origin \
+                --branch gh-pages \
+                --update-aliases \
+                "$VERSION" latest
+              uv run --locked mike set-default \
+                --config-file zensical.toml \
+                --remote origin \
+                --branch gh-pages \
+                latest
+            else
+              uv run --locked mike deploy \
+                --config-file zensical.toml \
+                --remote origin \
+                --branch gh-pages \
+                --update-aliases \
+                dev
+
+              git fetch --no-tags origin main:refs/remotes/origin/main
+              if [[ "$VALIDATED_SHA" != "$(git rev-parse origin/main)" ]]; then
+                echo "dev documentation superseded by newer main; skipping"
+                exit 0
+              fi
+            fi
+
+            if push_output="$(git push origin gh-pages 2>&1)"; then
+              echo "$push_output"
+              break
+            fi
+            echo "$push_output" >&2
+            if [[ "$push_output" != *"[rejected]"* ]] || \
+              [[ "$push_output" != *"(non-fast-forward)"* && \
+                "$push_output" != *"(fetch first)"* ]]; then
+              exit 1
+            fi
+            if [[ "$attempt" == 3 ]]; then
+              echo "gh-pages push conflicted after 3 attempts" >&2
+              exit 1
+            fi
+            echo "gh-pages changed concurrently; rebuilding attempt $((attempt + 1))"
+          done
+
+          uv run --locked mike list --config-file zensical.toml
