@@ -256,7 +256,7 @@ URIs remain in properties. Only recognized CADC GMS query/fragment prefixes are
 shortened. The ten-character permission summary is advisory: owner read/write,
 separate group access, public reading, no execute claim; locks remove displayed
 write permission. It **MUST NOT** be reported as a real POSIX `mode` or `gid`.
-See [ADR 0008](../adr/0008-render-shell-shaped-long-listings.md).
+See [ADR 0008](../../../../docs/adr/0008-render-shell-shaped-long-listings.md).
 
 `name` **MUST** be the full normalized filesystem path. URI-keyed node
 properties, including unknown properties, **MUST** be preserved in a read-only

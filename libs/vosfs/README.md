@@ -1,6 +1,6 @@
 # vosfs
 
-[![CI](https://github.com/shinybrar/vosfs/actions/workflows/ci.yml/badge.svg)](https://github.com/shinybrar/vosfs/actions/workflows/ci.yml)
+[![CI](https://github.com/opencadc/vostools/actions/workflows/ci.yml/badge.svg)](https://github.com/opencadc/vostools/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
@@ -15,7 +15,7 @@ unsupported.
 ## Install
 
 ```bash
-uv add git+https://github.com/shinybrar/vosfs@main
+uv add "git+https://github.com/opencadc/vostools@main#subdirectory=libs/vosfs"
 ```
 
 ## Quickstart
@@ -57,14 +57,14 @@ capability matrix — is the capability contract in
 
 ## Documentation
 
-The [vosfs documentation](https://shinybrar.github.io/vosfs/) contains the User
+The [vosfs documentation](https://opencadc.github.io/vostools/) contains the User
 Guide, task-first [recipes](docs/user/recipes.md), symptom-keyed
 [troubleshooting](docs/user/troubleshooting.md), the public API reference, and
 the [`fsspec-cli`](docs/user/cli/index.md) integration guide.
 
 The design contract for `fsspec-cli` lives in
 [`docs/design/fsspec-cli/`](docs/design/fsspec-cli/) and the architecture
-decisions in [`docs/adr/`](docs/adr/).
+decisions in [`docs/adr/`](../../docs/adr/).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) to work on the project. Public
 documentation source lives under `docs/user/`;

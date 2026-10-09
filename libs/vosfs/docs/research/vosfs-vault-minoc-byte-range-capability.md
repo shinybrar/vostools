@@ -8,7 +8,7 @@ Client under test: `vosfs` @ `fa194eb`
 
 Status: **Informative evidence** (probed 2026-07-24). Live claims below are
 unchanged. Contract/code follow-up: TRD §8 +
-[ADR 0007](../adr/0007-validate-range-support-from-206.md) now require
+[ADR 0007](../../../../docs/adr/0007-validate-range-support-from-206.md) now require
 response-validated `Range` for partial `cat_*` (`206` keep / `200` fallback).
 Staged `open` and `blockcache::` remain whole-object / unsupported.
 
@@ -303,6 +303,6 @@ curl -sS -L -D - -o /dev/null -H 'Range: bytes=0-9' 'https://cadc-west-01.canfar
 - [`opencadc/storage-inventory`](https://github.com/opencadc/storage-inventory) — minoc/vault
 - [`opencadc/vos`](https://github.com/opencadc/vos) — cavern, the audited boundary
 - In-repo: [`../design/trd.md`](../design/trd.md) §8,
-  [`../adr/0007-validate-range-support-from-206.md`](../adr/0007-validate-range-support-from-206.md),
+  [`docs/adr/0007-validate-range-support-from-206.md`](../../../../docs/adr/0007-validate-range-support-from-206.md),
   [`vosfs-transfer-endpoint-variability.md`](vosfs-transfer-endpoint-variability.md),
   [`archive/vosfs-contract-gap-analysis.md`](archive/vosfs-contract-gap-analysis.md) L134

@@ -89,4 +89,4 @@ see [`lessons.md` §16](lessons.md#16-the-matrix-is-evidence-never-a-runtime-inp
   a claim. Rows record exactly the claims that have evidence.
 - **A backend-declared capability registry.** That inverts the trust model: the
   CLI would believe a backend's self-description instead of validating results.
-  See [`adr/0006-treat-backend-results-as-untrusted-input.md`](../../adr/0006-treat-backend-results-as-untrusted-input.md).
+  See [`docs/adr/0006-treat-backend-results-as-untrusted-input.md`](../../../../../docs/adr/0006-treat-backend-results-as-untrusted-input.md).
