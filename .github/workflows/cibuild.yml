@@ -1,91 +1,59 @@
-name: CI
+# Publishes vos to PyPI when a `vos=<version>` release is created. The PyPI trusted publisher is
+# bound to this file name, so it stays until the per-package release workflow replaces it.
+name: Publish (legacy)
 
 on:
-  push:
-  pull_request:
-  schedule:
-    - cron: "0 4 * * *"
   release:
     types: [created]
 
+permissions:
+  contents: read
+
 jobs:
-  egginfo:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          python-version: "3.12"
-      - name: Check the lock file is up to date
-        run: uv lock --check
-      - name: Build vos
-        run: uv build --no-sources --package vos -o dist
-
-  tests:
-    needs: egginfo
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: ["3.10","3.11","3.12","3.13","3.14"]
-        package: [vos]
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Test ${{ matrix.package }}
-      run: uv run --locked --package ${{ matrix.package }} pytest libs/${{ matrix.package }}/tests
-
-  style_n_coverage:
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-        with:
-          python-version: "3.12"
-      - name: checkstyle vos
-        run: >-
-          uvx flake8 libs/vos/src libs/vos/tests --max-line-length 120
-          --extend-exclude libs/vos/tests/integration --count
-          --select=E101,W191,W291,W292,W293,W391,E111,E112,E113,E30,E502,E722,E901,E902,E999,F822,F823
-      - name: coverage vos
-        run: uv run --locked --package vos pytest libs/vos/tests --cov vos --cov-report xml:libs/vos/coverage.xml
-      - name: Upload coverage to codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./libs/vos/coverage.xml
+  quality:
+    name: Quality
+    uses: ./.github/workflows/quality.yml
 
   build-n-publish:
     name: Build and publish to PyPI
-    needs: style_n_coverage
+    needs: quality
+    if: github.repository == 'opencadc/vostools' && contains(github.ref, '=')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
-      # IMPORTANT: this permission is mandatory for trusted publishing
-      id-token: write
-    if: contains(github.ref, '=')
+      contents: read
+      id-token: write # Trusted publishing.
     steps:
-    - uses: actions/checkout@v4
-    - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
-      with:
-        python-version: "3.12"
-    - name: Determine the package
-      run: |
-        echo ${GITHUB_REF#refs/*/}
-        echo "repo_name=$(echo ${GITHUB_REF#refs/*/} | awk -F '=' '{print $1}')" >> $GITHUB_ENV
-        echo "repo_version=$(echo ${GITHUB_REF#refs/*/} | awk -F '=' '{print $2}')" >> $GITHUB_ENV
-    - name: Check version is valid
-      run: |
-        echo ${{ env.repo_name }}
-        echo ${{ env.repo_version }}
-        test -f libs/${{ env.repo_name }}/pyproject.toml || (echo "Invalid release tag. Package not found: ${{ env.repo_name }}" && exit 1)
-        version=$(uv version --package ${{ env.repo_name }} --short)
-        [ "$version" = "${{ env.repo_version }}" ] || (echo "Version in tag ${{ env.repo_version }} does not match version $version in pyproject.toml" && exit 1)
-    - name: Build package
-      run: uv build --no-sources --package ${{ env.repo_name }} -o dist
-    - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        packages-dir: dist/
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: "3.12"
+
+      - name: Check the tag names a package and its version
+        run: |
+          tag="${GITHUB_REF#refs/*/}"
+          name="${tag%%=*}"
+          version="${tag#*=}"
+          if [[ ! "$name" =~ ^[a-z0-9-]+$ ]] || [[ ! -f "libs/$name/pyproject.toml" ]]; then
+            echo "Invalid release tag $tag: no package libs/$name" >&2
+            exit 1
+          fi
+          actual="$(uv version --package "$name" --short)"
+          if [[ "$actual" != "$version" ]]; then
+            echo "Tag version $version does not match version $actual in libs/$name/pyproject.toml" >&2
+            exit 1
+          fi
+          echo "PACKAGE=$name" >> "$GITHUB_ENV"
+
+      - name: Build package
+        run: uv build --no-sources --package "$PACKAGE" --out-dir dist
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/

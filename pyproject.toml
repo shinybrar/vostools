@@ -23,11 +23,11 @@ dev = [
 # select (see libs/vos/pyproject.toml) and drops the override once it complies.
 [tool.ruff]
 line-length = 120
-
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
     "COM812", # Conflicts with the formatter.
+    "CPY001", # Each package's LICENSE file is authoritative; no per-file headers.
     "ISC001", # Conflicts with the formatter.
 ]
 

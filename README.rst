@@ -54,15 +54,6 @@ The live integration tests need CADC credentials and are not collected by defaul
     uv run --package vos pytest libs/vos/tests/integration
 
 
-Checkstyle
-~~~~~~~~~~
-flake8 style checking is enforced on pull requests. Following commands should
-not report errors
-
-::
-
-    uvx flake8 libs/vos/src libs/vos/tests --max-line-length 120 --extend-exclude libs/vos/tests/integration
-
 Linting, type checking and commit messages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The root ``pyproject.toml`` holds the shared ruff, ty and commitizen configuration; ``libs/vos`` extends it
@@ -74,5 +65,14 @@ them on demand:
     uv run pre-commit install
     uv run pre-commit run --all-files
 
-Commit messages follow `Conventional Commits <https://www.conventionalcommits.org/>`__ with the scopes
-``vos``, ``vosfs``, ``fss-cli`` or ``repo``, for example ``fix(vos): handle missing node properties``.
+Commit messages and pull request titles follow `Conventional Commits <https://www.conventionalcommits.org/>`__
+with the scopes ``vos``, ``vosfs``, ``fss-cli`` or ``repo``, for example
+``fix(vos): handle missing node properties``.
+
+Continuous integration
+~~~~~~~~~~~~~~~~~~~~~~
+``quality.yml`` always runs the hooks, builds every package and checks distribution metadata; its
+``Required`` job is the only check branch protection needs. Each package has its own workflow
+(``ci-vos.yml``, and later ``ci-vosfs.yml`` / ``ci-fss-cli.yml``) that GitHub starts only when that
+package's tree or a shared workspace file changes. Those workflows test on Python 3.10 to 3.14
+(and macOS on 3.12).
