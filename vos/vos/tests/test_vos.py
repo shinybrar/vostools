@@ -68,7 +68,9 @@
 
 # Test the vos Client class
 
+import calendar
 import os
+import time
 import unittest
 import pytest
 import requests
@@ -894,3 +896,32 @@ class Md5File(unittest.TestCase):
         hash = hashlib.md5()
         hash.update(binary_content)
         assert f.md5_checksum == hash.hexdigest()
+
+
+@pytest.mark.parametrize("url, expected", [
+    ("https://example.org/vault/data/image.fits?token=abc", "application/fits"),
+    ("https://example.org/vault/data/image.fit", "application/fits"),
+    ("https://example.org/vault/data/image.fz", "application/fits"),
+    ("https://example.org/vault/data/table.csv", "text/csv"),
+])
+def test_vofile_put_content_type(url, expected):
+    conn = Connection(resource_id='ivo://cadc.nrc.ca/vault')
+    vofile = VOFile([url], conn, "PUT", size=10)
+    assert vofile.request.headers["Content-Type"] == expected
+
+
+@pytest.fixture
+def local_timezone(monkeypatch, request):
+    monkeypatch.setenv("TZ", request.param)
+    time.tzset()
+    yield request.param
+    monkeypatch.undo()
+    time.tzset()
+
+
+# Zones without DST, so the offset used for "now" matches the parsed date.
+@pytest.mark.filterwarnings("error::DeprecationWarning")
+@pytest.mark.parametrize("local_timezone", ["UTC", "Asia/Kolkata", "America/Regina"], indirect=True)
+def test_convert_vospace_time_to_seconds(local_timezone):
+    expected = calendar.timegm((2021, 6, 15, 10, 20, 30, 0, 0, 0))
+    assert vos.convert_vospace_time_to_seconds("2021-06-15T10:20:30.123") == expected
