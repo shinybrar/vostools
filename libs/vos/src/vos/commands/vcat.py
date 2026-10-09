@@ -67,11 +67,11 @@
 #
 
 """cat VOSpace DataNode to stdout"""
+
 import sys
 import logging
 from ..vos import Client
-from ..commonparser import CommonParser, set_logging_level_from_args, \
-    exit_on_exception, URI_DESCRIPTION
+from ..commonparser import CommonParser, set_logging_level_from_args, exit_on_exception, URI_DESCRIPTION
 
 
 def _cat(uri, cert_filename=None, head=None, insecure=False):
@@ -86,12 +86,12 @@ def _cat(uri, cert_filename=None, head=None, insecure=False):
 
     fh = None
     try:
-        view = head and 'header' or 'data'
+        view = head and "header" or "data"
         c = Client(vospace_certfile=cert_filename, insecure=insecure)
         fh = c.open(uri, view=view)
         if c.is_remote_file(uri):
             sys.stdout.write(fh.read(return_response=True).text)
-            sys.stdout.write('\n\n')
+            sys.stdout.write("\n\n")
         else:
             fh = open(uri, str("r"))
             sys.stdout.write(fh.read())
@@ -110,15 +110,15 @@ Accepts cutout syntax for FITS files; see vcp --help for syntax details
 
 def vcat():
     parser = CommonParser(description=DESCRIPTION)
-    parser.add_argument("source", help="source to cat to stdout out.",
-                        nargs="+")
-    parser.add_argument("--head", action="store_true",
-                        help="retrieve only the headers of file from vospace. "
-                             "Might return an error if server does not "
-                             "support operation on a given file type.")
-    parser.add_argument("-q",
-                        help="run quietly, exit on error without message",
-                        action="store_true")
+    parser.add_argument("source", help="source to cat to stdout out.", nargs="+")
+    parser.add_argument(
+        "--head",
+        action="store_true",
+        help="retrieve only the headers of file from vospace. "
+        "Might return an error if server does not "
+        "support operation on a given file type.",
+    )
+    parser.add_argument("-q", help="run quietly, exit on error without message", action="store_true")
 
     args = parser.parse_args()
     set_logging_level_from_args(args)
@@ -129,16 +129,14 @@ def vcat():
 
     try:
         for uri in args.source:
-            if not uri.startswith('vos') and args.head:
-                logger.error('FITS header not supported for local source {}'.
-                             format(uri))
+            if not uri.startswith("vos") and args.head:
+                logger.error("FITS header not supported for local source {}".format(uri))
                 exit_code = 1
                 continue
             try:
-                _cat(uri, cert_filename=args.certfile, head=args.head,
-                     insecure=args.insecure)
+                _cat(uri, cert_filename=args.certfile, head=args.head, insecure=args.insecure)
             except Exception as e:
-                exit_code = getattr(e, 'errno', -1)
+                exit_code = getattr(e, "errno", -1)
                 if not args.q:
                     logger.error(str(e))
     except KeyboardInterrupt as ke:

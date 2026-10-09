@@ -67,10 +67,10 @@
 #
 
 """Move from a VOSpace Node to a new location or rename the Node"""
+
 from .. import vos
 import logging
-from ..commonparser import CommonParser, exit_on_exception, \
-    set_logging_level_from_args, URI_DESCRIPTION
+from ..commonparser import CommonParser, exit_on_exception, set_logging_level_from_args, URI_DESCRIPTION
 from urllib.parse import urlparse
 
 DESCRIPTION = """
@@ -85,10 +85,8 @@ e.g. vmv vos:/root/node vos:/root/newNode   --
 
 def vmv():
     parser = CommonParser(description=DESCRIPTION)
-    parser.add_argument("source", help="The name of the node to move.",
-                        action='store')
-    parser.add_argument("destination",
-                        help="VOSpace destination to move source to.")
+    parser.add_argument("source", help="The name of the node to move.", action="store")
+    parser.add_argument("destination", help="VOSpace destination to move source to.")
 
     args = parser.parse_args()
     set_logging_level_from_args(args)
@@ -96,17 +94,13 @@ def vmv():
     try:
         source = args.source
         dest = args.destination
-        client = vos.Client(
-            vospace_certfile=args.certfile,
-            vospace_token=args.token,
-            insecure=args.insecure)
+        client = vos.Client(vospace_certfile=args.certfile, vospace_token=args.token, insecure=args.insecure)
         if not client.is_remote_file(source):
-            raise ValueError('Source {} is not a remote node'.format(source))
+            raise ValueError("Source {} is not a remote node".format(source))
         if not client.is_remote_file(dest):
-            raise ValueError(
-                'Destination {} is not a remote node'.format(dest))
+            raise ValueError("Destination {} is not a remote node".format(dest))
         if urlparse(source).scheme != urlparse(dest).scheme:
-            raise ValueError('Move between services not supported')
+            raise ValueError("Move between services not supported")
         logging.info("{} -> {}".format(source, dest))
         client.move(source, dest)
     except Exception as ex:

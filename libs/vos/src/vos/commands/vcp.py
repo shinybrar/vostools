@@ -67,10 +67,10 @@
 #
 
 """copy files vospace to local or local to VOSpace"""
+
 from .. import md5_cache
 from .. import vos
-from ..commonparser import CommonParser, set_logging_level_from_args, \
-    exit_on_exception, URI_DESCRIPTION
+from ..commonparser import CommonParser, set_logging_level_from_args, exit_on_exception, URI_DESCRIPTION
 
 try:
     from xml.etree.ElementTree import ParseError
@@ -86,7 +86,7 @@ import time
 import warnings
 from cadcutils import exceptions
 
-__all__ = ['vcp']
+__all__ = ["vcp"]
 
 DESCRIPTION = """Copy files to and from VOSpace. Always recursive.
 VOSpace service associated to the requested container is discovered via
@@ -114,48 +114,37 @@ default service settings will be used.
 def vcp():
     # TODO split this into main and methods
 
-    class Nonlocal():
+    class Nonlocal:
         # this is just a workaround the lack of nonlocal in Python 2.7
         # should be refactored when 2.7 support is dropped
         exit_code = 0
 
     parser = CommonParser(description=DESCRIPTION)
+    parser.add_argument("source", nargs="+", help="file/directory/dataNode/containerNode to copy from.")
+    parser.add_argument("destination", help="file/directory/dataNode/containerNode to copy to")
+    parser.add_argument("--exclude", default=None, help="skip files that match pattern (overrides include)")
+    parser.add_argument("--include", default=None, help="only copy files that match pattern")
+    parser.add_argument("-i", "--interrogate", action="store_true", help="Ask before overwriting files")
+    parser.add_argument("--overwrite", action="store_true", help="DEPRECATED")
+    parser.add_argument("--quick", action="store_true", help="DEPRECATED", default=False)
     parser.add_argument(
-        "source", nargs="+",
-        help="file/directory/dataNode/containerNode to copy from.")
-    parser.add_argument(
-        "destination",
-        help="file/directory/dataNode/containerNode to copy to")
-    parser.add_argument(
-        "--exclude", default=None,
-        help="skip files that match pattern (overrides include)")
-    parser.add_argument(
-        "--include", default=None,
-        help="only copy files that match pattern")
-    parser.add_argument(
-        "-i", "--interrogate", action="store_true",
-        help="Ask before overwriting files")
-    parser.add_argument(
-        "--overwrite", action="store_true",
-        help="DEPRECATED")
-    parser.add_argument(
-        "--quick", action="store_true",
-        help="DEPRECATED",
-        default=False)
-    parser.add_argument(
-        "-L", "--follow-links",
+        "-L",
+        "--follow-links",
         help="follow symbolic links. Default is to not follow links.",
         action="store_true",
-        default=False)
+        default=False,
+    )
     parser.add_argument(
-        "--ignore", action="store_true", default=False,
-        help="ignore errors and continue with recursive copy")
+        "--ignore", action="store_true", default=False, help="ignore errors and continue with recursive copy"
+    )
     parser.add_argument(
-        "--head", action="store_true",
+        "--head",
+        action="store_true",
         help="copy only the headers of a file from vospace. Format of the "
-             "returned files is text (and not FITS). Might return an error if "
-             "the server does not support the operation on a given "
-             "file type")
+        "returned files is text (and not FITS). Might return an error if "
+        "the server does not support the operation on a given "
+        "file type",
+    )
 
     args = parser.parse_args()
 
@@ -167,22 +156,23 @@ def vcp():
     if args.overwrite:
         warnings.warn("the --overwrite option is no longer supported")
 
-    client = vos.Client(
-        vospace_certfile=args.certfile, vospace_token=args.token,
-        insecure=args.insecure)
+    client = vos.Client(vospace_certfile=args.certfile, vospace_token=args.token, insecure=args.insecure)
 
     if not client.is_remote_file(dest):
         dest = os.path.abspath(dest)
 
     cutout_pattern = re.compile(
-        r'(.*?)(?P<cutout>(\[[\-+]?[\d*]+(:[\-+]?[\d*]+)?'
-        r'(,[\-+]?[\d*]+(:[\-+]?[\d*]+)?)?\])+)$')
+        r"(.*?)(?P<cutout>(\[[\-+]?[\d*]+(:[\-+]?[\d*]+)?"
+        r"(,[\-+]?[\d*]+(:[\-+]?[\d*]+)?)?\])+)$"
+    )
 
-    ra_dec_cutout_pattern = re.compile(r"([^()]*?)"
-                                       r"(?P<cutout>\("
-                                       r"(?P<ra>[\-+]?\d*(\.\d*)?),"
-                                       r"(?P<dec>[\-+]?\d*(\.\d*)?),"
-                                       r"(?P<rad>\d*(\.\d*)?)\))?")
+    ra_dec_cutout_pattern = re.compile(
+        r"([^()]*?)"
+        r"(?P<cutout>\("
+        r"(?P<ra>[\-+]?\d*(\.\d*)?),"
+        r"(?P<dec>[\-+]?\d*(\.\d*)?),"
+        r"(?P<rad>\d*(\.\d*)?)\))?"
+    )
 
     # Warnings:
     # vcp destination specified with a trailing '/' implies ContainerNode
@@ -234,9 +224,7 @@ def vcp():
             try:
                 node = get_node(filename, limit=0)
                 return node is not None
-            except (
-                exceptions.NotFoundException, exceptions.ForbiddenException,
-                    exceptions.UnauthorizedException):
+            except (exceptions.NotFoundException, exceptions.ForbiddenException, exceptions.UnauthorizedException):
                 return False
         else:
             return os.access(filename, mode)
@@ -260,7 +248,7 @@ def vcp():
     def get_md5(filename):
         logging.debug("getting the MD5 for %s" % filename)
         if client.is_remote_file(filename):
-            return get_node(filename).props.get('MD5', vos.ZERO_MD5)
+            return get_node(filename).props.get("MD5", vos.ZERO_MD5)
         else:
             return md5_cache.MD5Cache.compute_md5(filename)
 
@@ -270,8 +258,16 @@ def vcp():
         else:
             return glob.glob(pathname)
 
-    def copy(source_name, destination_name, exclude=None, include=None,
-             interrogate=False, overwrite=False, ignore=False, head=False):
+    def copy(
+        source_name,
+        destination_name,
+        exclude=None,
+        include=None,
+        interrogate=False,
+        overwrite=False,
+        ignore=False,
+        head=False,
+    ):
         """
         Send source_name to destination, possibly looping over contents if
         source_name points to a directory.
@@ -299,8 +295,7 @@ def vcp():
         # recursive
         try:
             if not args.follow_links and islink(source_name):
-                logging.info(
-                    "{}: Skipping (symbolic link)".format(source_name))
+                logging.info("{}: Skipping (symbolic link)".format(source_name))
                 return
             if isdir(source_name):
                 # make sure the destination exists...
@@ -310,30 +305,34 @@ def vcp():
                 # the destination directory
                 for filename in listdir(source_name):
                     logging.debug("%s -> %s" % (filename, source_name))
-                    copy(os.path.join(source_name, filename),
-                         os.path.join(destination_name, filename),
-                         exclude, include, interrogate, overwrite, ignore,
-                         head)
+                    copy(
+                        os.path.join(source_name, filename),
+                        os.path.join(destination_name, filename),
+                        exclude,
+                        include,
+                        interrogate,
+                        overwrite,
+                        ignore,
+                        head,
+                    )
             else:
                 if interrogate:
                     if access(destination_name, os.F_OK):
-                        sys.stderr.write(
-                            "File %s exists.  Overwrite? (y/n): " %
-                            destination_name)
+                        sys.stderr.write("File %s exists.  Overwrite? (y/n): " % destination_name)
                         ans = sys.stdin.readline().strip()
-                        if ans != 'y':
+                        if ans != "y":
                             raise Exception("File exists")
 
                 skip = False
                 if exclude is not None:
-                    for thisIgnore in exclude.split(','):
+                    for thisIgnore in exclude.split(","):
                         if not destination_name.find(thisIgnore) < 0:
                             skip = True
                             continue
 
                 if include is not None:
                     skip = True
-                    for thisIgnore in include.split(','):
+                    for thisIgnore in include.split(","):
                         if not destination_name.find(thisIgnore) < 0:
                             skip = False
                             continue
@@ -349,27 +348,21 @@ def vcp():
                         break
                     except Exception as client_exception:
                         logging.debug("{}".format(client_exception))
-                        if getattr(client_exception, 'errno', -1) == 104:
+                        if getattr(client_exception, "errno", -1) == 104:
                             # 104 is connection reset by peer.
                             # Try again on this error
                             logging.warning(str(client_exception))
-                            Nonlocal.exit_code += \
-                                getattr(client_exception, 'errno', -1)
-                        elif getattr(client_exception, 'errno',
-                                     -1) == errno.EIO:
+                            Nonlocal.exit_code += getattr(client_exception, "errno", -1)
+                        elif getattr(client_exception, "errno", -1) == errno.EIO:
                             # retry on IO errors
-                            logging.warning(
-                                "{0}: Retrying".format(client_exception))
+                            logging.warning("{0}: Retrying".format(client_exception))
                             pass
                         elif ignore:
                             if niters > 100:
-                                logging.error(
-                                    "%s (skipping after %d attempts)" % (
-                                        str(client_exception), niters))
+                                logging.error("%s (skipping after %d attempts)" % (str(client_exception), niters))
                                 skip = True
                             else:
-                                logging.error(
-                                    "%s (retrying)" % str(client_exception))
+                                logging.error("%s (retrying)" % str(client_exception))
                                 time.sleep(5)
                                 niters += 1
                         else:
@@ -377,10 +370,10 @@ def vcp():
 
         except OSError as os_exception:
             logging.debug(str(os_exception))
-            if getattr(os_exception, 'errno', -1) == errno.EINVAL:
+            if getattr(os_exception, "errno", -1) == errno.EINVAL:
                 # not a valid uri, just skip those...
                 logging.warning("%s: Skipping" % str(os_exception))
-                Nonlocal.exit_code += getattr(os_exception, 'errno', -1)
+                Nonlocal.exit_code += getattr(os_exception, "errno", -1)
             else:
                 exit_on_exception(os_exception)
 
@@ -391,7 +384,6 @@ def vcp():
     source = args.source[0]
     try:
         for source_pattern in args.source:
-
             if args.head and not client.is_remote_file(source_pattern):
                 logging.error("head only works for source files in vospace")
                 continue
@@ -407,11 +399,11 @@ def vcp():
                 cutout = None
                 if cutout_match is not None:
                     source_pattern = cutout_match.group(1)
-                    cutout = cutout_match.group('cutout')
+                    cutout = cutout_match.group("cutout")
                 else:
                     ra_dec_match = ra_dec_cutout_pattern.search(source_pattern)
                     if ra_dec_match is not None:
-                        cutout = ra_dec_match.group('cutout')
+                        cutout = ra_dec_match.group("cutout")
                 logging.debug("cutout: {}".format(cutout))
                 sources = lglob(source_pattern)
                 if cutout is not None:
@@ -429,10 +421,8 @@ def vcp():
                     continue
 
                 # copying inside VOSpace not yet implemented
-                if client.is_remote_file(source) and \
-                   client.is_remote_file(dest):
-                    raise Exception(
-                        "Can not (yet) copy from VOSpace to VOSpace.")
+                if client.is_remote_file(source) and client.is_remote_file(dest):
+                    raise Exception("Can not (yet) copy from VOSpace to VOSpace.")
 
                 this_destination = dest
                 if isdir(source):
@@ -447,42 +437,39 @@ def vcp():
                     # given as a source and the copy is recursive.
                     if access(dest, os.F_OK):
                         if not isdir(dest):
-                            raise Exception(
-                                "Can't write a directory (%s) to a file (%s)" %
-                                (source, dest))
+                            raise Exception("Can't write a directory (%s) to a file (%s)" % (source, dest))
                         # directory exists so we append the end of source to
                         # that (UNIX behaviour)
-                        this_destination = os.path.normpath(
-                            os.path.join(dest, os.path.basename(source)))
+                        this_destination = os.path.normpath(os.path.join(dest, os.path.basename(source)))
                     elif len(args.source) > 1:
-                        raise Exception(
-                            ("vcp can not copy multiple things into a"
-                             "non-existent location (%s)") % dest)
-                elif dest[-1] == '/' or isdir(dest):
+                        raise Exception(("vcp can not copy multiple things into anon-existent location (%s)") % dest)
+                elif dest[-1] == "/" or isdir(dest):
                     # we're copying into a directory
-                    this_destination = os.path.join(dest,
-                                                    os.path.basename(source))
-                copy(source, this_destination, exclude=args.exclude,
-                     include=args.include,
-                     interrogate=args.interrogate, overwrite=args.overwrite,
-                     ignore=args.ignore, head=args.head)
+                    this_destination = os.path.join(dest, os.path.basename(source))
+                copy(
+                    source,
+                    this_destination,
+                    exclude=args.exclude,
+                    include=args.include,
+                    interrogate=args.interrogate,
+                    overwrite=args.overwrite,
+                    ignore=args.ignore,
+                    head=args.head,
+                )
 
     except KeyboardInterrupt as ke:
         logging.info("Received keyboard interrupt. Execution aborted...\n")
-        Nonlocal.exit_code = getattr(ke, 'errno', -1)
+        Nonlocal.exit_code = getattr(ke, "errno", -1)
     except ParseError:
         Nonlocal.exit_code = errno.EREMOTE
-        msg = "Failure at server while copying {0} -> {1}\n".format(source,
-                                                                    dest)
+        msg = "Failure at server while copying {0} -> {1}\n".format(source, dest)
         exit_on_exception(msg)
     except Exception as e:
-        if re.search('NodeLocked', str(e)) is not None:
-            msg = "Use vlock to unlock the node before copying to {}.".format(
-                this_destination)
+        if re.search("NodeLocked", str(e)) is not None:
+            msg = "Use vlock to unlock the node before copying to {}.".format(this_destination)
             exit_on_exception(e, msg)
-        elif getattr(e, 'errno', -1) == errno.EREMOTE:
-            msg = "Failure at remote server while copying {0} -> {1}\n".format(
-                    source, dest)
+        elif getattr(e, "errno", -1) == errno.EREMOTE:
+            msg = "Failure at remote server while copying {0} -> {1}\n".format(source, dest)
             exit_on_exception(e, msg)
         else:
             exit_on_exception(e)

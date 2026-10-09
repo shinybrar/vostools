@@ -5,4 +5,3 @@
 # the command line. e.g. vos:path/to/file is the path to a file on the VOSpace
 # service with the vos prefix. Prefixes in the config file must be unique.
 resourceID = ivo://cadc.nrc.ca/vault vos
-
