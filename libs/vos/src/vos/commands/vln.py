@@ -67,8 +67,8 @@
 #
 
 """link one VOSpace Node to another."""
-from ..commonparser import CommonParser, set_logging_level_from_args, \
-    exit_on_exception, URI_DESCRIPTION
+
+from ..commonparser import CommonParser, set_logging_level_from_args, exit_on_exception, URI_DESCRIPTION
 from .. import vos
 from argparse import ArgumentError
 
@@ -97,20 +97,15 @@ examples:
 
 def vln():
     parser = CommonParser(description=DESCRIPTION)
-    parser.add_argument('source', help="location that link will point to.")
-    parser.add_argument('target', help="location of the LinkNode")
+    parser.add_argument("source", help="location that link will point to.")
+    parser.add_argument("target", help="location of the LinkNode")
 
     try:
         opt = parser.parse_args()
         set_logging_level_from_args(opt)
-        client = vos.Client(
-            vospace_certfile=opt.certfile,
-            vospace_token=opt.token,
-            insecure=opt.insecure)
+        client = vos.Client(vospace_certfile=opt.certfile, vospace_token=opt.token, insecure=opt.insecure)
         if not client.is_remote_file(opt.target):
-            raise ArgumentError(
-                None,
-                "target must be vos node")
+            raise ArgumentError(None, "target must be vos node")
 
         client.link(opt.source, opt.target)
     except ArgumentError as ex:
