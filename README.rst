@@ -62,3 +62,17 @@ not report errors
 ::
 
     uvx flake8 libs/vos/src libs/vos/tests --max-line-length 120 --extend-exclude libs/vos/tests/integration
+
+Linting, type checking and commit messages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The root ``pyproject.toml`` holds the shared ruff, ty and commitizen configuration; ``libs/vos`` extends it
+with a narrower rule set while it is brought up to the shared policy. Install the git hooks once, then run
+them on demand:
+
+::
+
+    uv run pre-commit install
+    uv run pre-commit run --all-files
+
+Commit messages follow `Conventional Commits <https://www.conventionalcommits.org/>`__ with the scopes
+``vos``, ``vosfs``, ``fss-cli`` or ``repo``, for example ``fix(vos): handle missing node properties``.
