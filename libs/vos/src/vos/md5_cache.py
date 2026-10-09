@@ -67,15 +67,16 @@
 #
 
 """
- A cache of MD5 meta data associated with VOSpace transfers.
+A cache of MD5 meta data associated with VOSpace transfers.
 
- When transferring large numbers of files to and from VOSpace there is a
- substantial expectation of network failures which will require that a
- transfer be re-attempted.  This module provides a class that keeps track
- of the MD5 values associated files on disk and in VOSpace allowing the
- caller to choose to skip files that match (MD5 wise) between the
- two locations.
+When transferring large numbers of files to and from VOSpace there is a
+substantial expectation of network failures which will require that a
+transfer be re-attempted.  This module provides a class that keeps track
+of the MD5 values associated files on disk and in VOSpace allowing the
+caller to choose to skip files that match (MD5 wise) between the
+two locations.
 """
+
 import sqlite3
 import logging
 import hashlib
@@ -104,9 +105,12 @@ class MD5Cache:
         with sql_conn:
             # build cache lookup if doesn't already exists
             sql_conn.execute(
-                ("create table if not exists "
-                 "md5_cache (filename text PRIMARY KEY NOT NULL , "
-                 "md5 text, st_size int, st_mtime int)"))
+                (
+                    "create table if not exists "
+                    "md5_cache (filename text PRIMARY KEY NOT NULL , "
+                    "md5 text, st_size int, st_mtime int)"
+                )
+            )
 
     @staticmethod
     def compute_md5(filename, block_size=READ_BUFFER_SIZE):
@@ -120,7 +124,7 @@ class MD5Cache:
         :rtype: str
         """
         md5 = hashlib.md5()
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             while True:
                 buf = f.read(block_size)
                 if len(buf) == 0:
@@ -137,10 +141,7 @@ class MD5Cache:
         """
         slq_conn = sqlite3.connect(self.cache_db)
         with slq_conn:
-            cursor = slq_conn.execute(
-                "SELECT md5, st_size, "
-                "st_mtime FROM md5_cache WHERE filename = ? ",
-                (filename,))
+            cursor = slq_conn.execute("SELECT md5, st_size, st_mtime FROM md5_cache WHERE filename = ? ", (filename,))
             md5_row = cursor.fetchone()
         if md5_row is not None:
             return md5_row
@@ -155,8 +156,7 @@ class MD5Cache:
         """
         sql_conn = sqlite3.connect(self.cache_db)
         with sql_conn:
-            sql_conn.execute("DELETE from md5_cache WHERE filename = ?",
-                             (filename,))
+            sql_conn.execute("DELETE from md5_cache WHERE filename = ?", (filename,))
 
     def update(self, filename, md5, st_size, st_mtime):
         """Update the MD5 value stored in the cache db
@@ -172,12 +172,11 @@ class MD5Cache:
         sql_connection = sqlite3.connect(self.cache_db)
         try:
             with sql_connection:
+                sql_connection.execute("DELETE from md5_cache WHERE filename = ?", (filename,))
                 sql_connection.execute(
-                    "DELETE from md5_cache WHERE filename = ?", (filename,))
-                sql_connection.execute(
-                    ("INSERT INTO md5_cache (filename, md5, st_size, st_mtime)"
-                     " VALUES ( ?, ?, ?, ?)"),
-                    (filename, md5, st_size, st_mtime))
+                    ("INSERT INTO md5_cache (filename, md5, st_size, st_mtime) VALUES ( ?, ?, ?, ?)"),
+                    (filename, md5, st_size, st_mtime),
+                )
         except Exception as e:
             logging.error(e)
         return md5

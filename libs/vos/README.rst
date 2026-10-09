@@ -1,7 +1,7 @@
 DOCUMENTATION
 =============
 
-.. image:: https://img.shields.io/pypi/v/vos.svg   
+.. image:: https://img.shields.io/pypi/v/vos.svg
     :target: https://pypi.python.org/pypi/vos
 
 vos is a set of python modules and scripts that ease access to VOSpace.

@@ -70,8 +70,7 @@
 
 import os
 import logging
-from ..commonparser import CommonParser, set_logging_level_from_args, \
-    exit_on_exception, URI_DESCRIPTION
+from ..commonparser import CommonParser, set_logging_level_from_args, exit_on_exception, URI_DESCRIPTION
 from .. import vos
 
 DESCRIPTION = """creates a new VOSpace ContainerNode (aka directory).
@@ -83,24 +82,18 @@ eg vmkdir vos:RootNode/NewContainer""".format(URI_DESCRIPTION)
 
 def vmkdir():
     parser = CommonParser(description=DESCRIPTION)
-    parser.add_argument('container_node', action='store',
-                        help='Name of the container node to craete.')
-    parser.add_argument("-p", action="store_true",
-                        help="Create intermediate directories as required.")
+    parser.add_argument("container_node", action="store", help="Name of the container node to craete.")
+    parser.add_argument("-p", action="store_true", help="Create intermediate directories as required.")
 
     args = parser.parse_args()
 
     set_logging_level_from_args(args)
 
-    logging.info(
-        "Creating ContainerNode (directory) {}".format(args.container_node))
+    logging.info("Creating ContainerNode (directory) {}".format(args.container_node))
 
     try:
         this_dir = args.container_node
-        client = vos.Client(
-            vospace_certfile=args.certfile,
-            vospace_token=args.token,
-            insecure=args.insecure)
+        client = vos.Client(vospace_certfile=args.certfile, vospace_token=args.token, insecure=args.insecure)
 
         dir_names = []
         if args.p:
