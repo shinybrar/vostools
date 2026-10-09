@@ -1,9 +1,12 @@
-# Contributing to vosfs
+# Contributing to vostools
 
 This guide defines the contribution workflow for humans and automated agents.
 Agents must also follow `AGENTS.md`; repository configuration and required CI
 checks are the executable enforcement of this policy. If they disagree, fix
 the policy and configuration together in the same pull request.
+
+The repository is a uv workspace with three packages under `libs/`: `vos`,
+`vosfs` and `fsspec-cli` (directory `libs/fss-cli`).
 
 ## Ground rules
 
@@ -29,26 +32,27 @@ uv run pre-commit install --install-hooks \
   --hook-type commit-msg
 ```
 
-The `dev` dependency group must contain every contributor tool used by the
-hooks or CI. The hook configuration must cover Ruff formatting and linting,
-ty type checks, Commitizen message validation, general file-safety checks, and
-Markdown checks.
+The root `dev` dependency group must contain every contributor tool used by the
+hooks or CI. Each package's own `dev` group holds only what its tests need. The
+hook configuration must cover Ruff formatting and linting, ty type checks,
+Commitizen message validation, general file-safety checks, and Markdown checks.
 
 ## Make a change
 
-- Support every actively supported Python version allowed by
-  `project.requires-python`. CI tests that full range on Linux and tests the
-  newest-minus-two Python release on macOS. Linux and macOS are the supported
-  host platforms; other platforms are untested and unsupported. Advance the
-  declared minimum and matrix together as Python's five-version support window
-  moves.
-- Keep the `vosfs` package under `src/vosfs/`. Each independently installable
-  workspace member keeps its package under that member's `src/` directory. Add
-  type annotations to public APIs.
+- Support every Python version allowed by the package's
+  `project.requires-python`. CI tests 3.10 to 3.14 on Linux and 3.12 on macOS.
+  Linux and macOS are the supported host platforms; other platforms are
+  untested and unsupported.
+- Keep each package's module under `libs/<package>/src/` and its tests under
+  `libs/<package>/tests/`, so tests never ship in wheels. Add type annotations
+  to public APIs.
 - Use Ruff as the only Python formatter and linter, and ty as the type checker.
+  The shared policy lives in the root `pyproject.toml`; a package that is not
+  yet clean extends it with a narrower rule set that only ever shrinks.
 - Add or update pytest tests for observable behavior. Tests must be
   deterministic and offline.
-- Maintain at least 90% overall branch coverage across `src/vosfs`.
+- Keep each package at or above its configured coverage floor (`vosfs`
+  requires 90% branch coverage).
 - Update user-facing Markdown in the same pull request as behavior changes.
   Do not document commands or APIs that do not exist.
 - Do not edit `uv.lock` by hand. Use `uv add`, `uv add --dev`, `uv remove`, or
@@ -56,12 +60,9 @@ Markdown checks.
 
 All hand-authored Markdown files must pass the configured Markdown lint,
 trailing-whitespace, and end-of-file checks. Public documentation under
-`docs/user/` must also pass a strict Zensical build. The generated root
-`CHANGELOG.md` is excluded from PyMarkdown; Release Please owns its formatting
-from Commitizen-compatible Conventional Commit titles. General whitespace and
-end-of-file hooks still apply. Do not commit generated site output to source
-branches. Only the trusted Pages workflow may commit the complete generated
-site to the machine-owned `gh-pages` branch.
+`libs/vosfs/docs/user/` must also pass a strict Zensical build. Generated
+`CHANGELOG.md` files are excluded from PyMarkdown. Do not commit generated site
+output.
 
 ## Validate the change
 
@@ -70,28 +71,23 @@ the complete local gate:
 
 ```bash
 uv lock --check
-uv run pre-commit run --all-files
-uv run pytest
-uv run --package fsspec-cli pytest src/fsspec-cli/tests
-uv run zensical build --strict --clean
-uv build --no-sources --package vosfs
-uv build --no-sources --package fsspec-cli
+uv run --all-packages pre-commit run --all-files
+uv run pytest tests/repo
+uv run --all-packages zensical build --strict --clean
+uv run --package vos pytest libs/vos/tests
+uv run --package vosfs pytest libs/vosfs/tests
+uv run --package fsspec-cli pytest libs/fss-cli/tests
+uv build --no-sources --all-packages
 ```
 
-If a hook changes files, review the changes, stage them, and run the gate again.
-The pull request must pass the same required CI checks before merge.
-
-Pull-request CI validates code, tests, Markdown, and the strict Zensical build.
-Every push to `main` runs Release Please once and dispatches that exact commit
-to the Pages workflow as `dev`. A package release is published by the single
-retryable publisher for its exact tag and SHA. Only successful `vosfs`
-publication dispatches versioned documentation and updates `latest`;
-`fsspec-cli` publication never does. Publication supplements PR validation; it
-never replaces or weakens it.
+`python3 .github/scripts/wheel_gate.py <package> <python>` repeats CI's
+installed-wheel check for one package. If a hook changes files, review the
+changes, stage them, and run the gate again. The pull request must pass the
+same required CI checks before merge.
 
 ## Commit messages
 
-Every commit must follow
+Every commit and pull request title must follow
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
 
 ```text
@@ -99,8 +95,9 @@ Every commit must follow
 ```
 
 Allowed types are `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`,
-`build`, `ci`, `chore`, and `revert`. Use `!` and a `BREAKING CHANGE:` footer
-for a breaking change.
+`build`, `ci`, `chore`, and `revert`. Scopes are `vos`, `vosfs`, `fss-cli` and
+`repo`; comma-separate several. Use `!` and a `BREAKING CHANGE:` footer for a
+breaking change.
 
 Humans should use Commitizen's interactive prompt:
 

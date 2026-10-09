@@ -53,6 +53,24 @@ The live integration tests need CADC credentials and are not collected by defaul
 
     uv run --package vos pytest libs/vos/tests/integration
 
+Testing vosfs and fsspec-cli
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    uv run --package vosfs pytest libs/vosfs/tests
+    uv run --package fsspec-cli pytest libs/fss-cli/tests
+
+Documentation
+~~~~~~~~~~~~~
+The vosfs and fsspec-cli user documentation is built with Zensical from ``zensical.toml``:
+
+::
+
+    uv run --all-packages zensical build --strict --clean
+
+``CONTRIBUTING.md`` lists the complete local gate to run before opening a pull request.
+
 
 Linting, type checking and commit messages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

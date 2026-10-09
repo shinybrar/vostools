@@ -13,16 +13,27 @@ members = ["libs/*"]
 [dependency-groups]
 dev = [
     "commitizen>=4.19.2,<5",
+    "mkdocstrings-python>=2.0.5",
     "pre-commit>=4.6.2",
     "pymarkdownlnt>=0.9.40",
+    "pytest>=9.1.1",
+    "pyyaml>=6.0.2",
     "ruff>=0.16.10",
     "ty>=0.0.85",
+    "zensical>=0.0.50",
 ]
+
+# Repository contract tests only; each package configures pytest in its own pyproject.toml.
+[tool.pytest]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+testpaths = ["tests/repo"]
 
 # Repository policy. A package that is not yet clean extends this table with a narrower
 # select (see libs/vos/pyproject.toml) and drops the override once it complies.
 [tool.ruff]
 line-length = 120
+per-file-target-version = { "tests/repo/*.py" = "py312" } # Contract tests use tomllib; CI runs them on 3.12.
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
