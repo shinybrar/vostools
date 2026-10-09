@@ -21,15 +21,15 @@ Developers Guide
 ================
 
 
-Requires pip.
+Requires `uv <https://docs.astral.sh/uv/>`__. The repository is a uv workspace; each package lives under
+``libs/<package>``.
 
 Installing Packages
 -------------------
-Note: might need to escape chars in your shell
 
 ::
 
-    cd vos && pip install -e .[test]
+    uv sync --locked --all-packages
 
 Testing packages
 ----------------
@@ -39,9 +39,19 @@ Testing vos
 
 ::
 
-    cd ./vos
-    pytest vos
+    uv run --package vos pytest libs/vos/tests
 
+To test with a specific version of Python (uv downloads it if needed):
+
+::
+
+    uv run --package vos -p 3.14 pytest libs/vos/tests
+
+The live integration tests need CADC credentials and are not collected by default:
+
+::
+
+    uv run --package vos pytest libs/vos/tests/integration
 
 
 Checkstyle
@@ -51,31 +61,4 @@ not report errors
 
 ::
 
-     cd libs/vos && flake8 src tests
-
-
-Testing with tox
-~~~~~~~~~~~~~~~~
-
-If tox, the generic virtual environment tool, is available it can be used to test with different versions of
-python is isolation. For example, to test on all supported versions of Python in cadcdata (assuming that
-they are available in the system):
-
-::
-
-    cd ./libs/vos && tox
-
-To test a specific version:
-
-::
-
-    cd ./libs/vos && tox -e py310
-
-
-To list all the available environments:
-
-::
-
-    cd ./libs/vos && tox -a
-
-
+    uvx flake8 libs/vos/src libs/vos/tests --max-line-length 120 --extend-exclude libs/vos/tests/integration

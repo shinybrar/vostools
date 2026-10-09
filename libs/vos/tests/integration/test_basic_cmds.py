@@ -2,7 +2,7 @@ from vos.commands import vls, vcp, vmkdir, vrm, vrmdir, vchmod, vmv, vln, vsync
 from vos.commands import vtag, vlock
 from io import StringIO
 from cadcutils import net
-from mock import patch, Mock
+from unittest.mock import patch, Mock
 import pytest
 import sys
 import os

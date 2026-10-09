@@ -43,10 +43,10 @@ is the most direct way to get the latest stable release:
 
 ``pip install vos --upgrade --user``
 
-Or, you can retrieve the `github <github.com/canfar/vos>`__ distribution
-and use
+Or, you can retrieve the `github <https://github.com/opencadc/vostools>`__ distribution
+and, from the repository root, use
 
-``python setup.py install --user``
+``uv pip install ./libs/vos``
 
 Tutorial
 --------
