@@ -1,0 +1,7 @@
+# Formatting-only commits, skipped by git blame (GitHub reads this file automatically).
+# Locally: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style(vos): apply ruff format
+2f69e7e36e699dd0939e62e78498a7e3f7ddfebc
+# style(vos): strip trailing whitespace and blank lines at end of file
+f393f9f80bb640a5c4b3637788b8a9b9f36fd532
