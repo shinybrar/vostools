@@ -88,7 +88,6 @@ absolute path, or expand it yourself:
 
 ```python
 from pathlib import Path
-
 certfile = str(Path("~/.ssl/cadcproxy.pem").expanduser())
 ```
 

@@ -76,7 +76,7 @@ fs = fsspec.filesystem("vos", **STORAGE)
 try:
     for path in fs.glob("/project/night-*/calib.fits"):
         with fs.open(path, "rb") as handle:
-            process(handle)  # staged to a temp file, then removed
+            process(handle)          # staged to a temp file, then removed
 finally:
     fs.close()
 ```

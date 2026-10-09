@@ -27,7 +27,6 @@ one `AbstractFileSystem` per command invocation.
 ```python
 from contextlib import asynccontextmanager
 
-
 @asynccontextmanager
 async def archive_source():
     fs = VOSpaceFileSystem(

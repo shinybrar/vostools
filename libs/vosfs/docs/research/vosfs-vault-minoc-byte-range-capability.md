@@ -161,7 +161,7 @@ interface had no security methods at all":
 ```python
 advertised.discard("")
 if security_method == ANONYMOUS_METHOD:
-    return not advertised  # False whenever ANY authenticated method is listed
+    return not advertised          # False whenever ANY authenticated method is listed
 ```
 
 Because `cookie`/`cert`/`token` remain in the set, `not advertised` is `False`,
