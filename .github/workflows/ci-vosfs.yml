@@ -1,11 +1,11 @@
-# Test vos when its tree or shared workspace files change.
-name: vos
+# Test vosfs when its tree or shared workspace files change.
+name: vosfs
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - "libs/vos/**"
+      - "libs/vosfs/**"
       - "pyproject.toml"
       - "uv.lock"
       - ".pre-commit-config.yaml"
@@ -14,7 +14,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "libs/vos/**"
+      - "libs/vosfs/**"
       - "pyproject.toml"
       - "uv.lock"
       - ".pre-commit-config.yaml"
@@ -28,7 +28,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: vos-${{ github.event.pull_request.number || github.ref }}
+  group: vosfs-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
     name: Tests
     uses: ./.github/workflows/reusable-package.yml
     with:
-      package: vos
-      distribution: vos
+      package: vosfs
+      distribution: vosfs
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

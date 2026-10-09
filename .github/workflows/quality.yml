@@ -22,7 +22,7 @@ jobs:
   quality:
     name: Quality
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -40,6 +40,12 @@ jobs:
 
       - name: Run all pre-commit hooks
         run: uv run --locked --all-packages pre-commit run --all-files --show-diff-on-failure
+
+      - name: Run repository contract tests
+        run: uv run --locked pytest tests/repo
+
+      - name: Build strict documentation
+        run: uv run --locked --all-packages zensical build --strict --clean
 
       - name: Build every package
         run: uv build --no-sources --all-packages --out-dir dist

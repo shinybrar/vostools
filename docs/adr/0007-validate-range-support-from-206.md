@@ -32,6 +32,6 @@ body is a partial. Staged `open` stays whole-object. `blockcache::` /
 
 ## Notes
 
-Normative detail lives in [`docs/design/trd.md`](../design/trd.md) §8.
+Normative detail lives in [`libs/vosfs/docs/design/trd.md`](../../libs/vosfs/docs/design/trd.md) §8.
 Informative deployment probes:
-[`docs/research/vosfs-vault-minoc-byte-range-capability.md`](../research/vosfs-vault-minoc-byte-range-capability.md).
+[`libs/vosfs/docs/research/vosfs-vault-minoc-byte-range-capability.md`](../../libs/vosfs/docs/research/vosfs-vault-minoc-byte-range-capability.md).

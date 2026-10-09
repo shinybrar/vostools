@@ -167,6 +167,6 @@ started writes to close — but a dispatched `PUT` remains uncertain.
 ## Still stuck
 
 Check the [User Guide](guide.md) for the full capability and error tables, and
-the [capability contract](https://github.com/shinybrar/vosfs/blob/main/docs/design/trd.md)
+the [capability contract](https://github.com/opencadc/vostools/blob/main/libs/vosfs/docs/design/trd.md)
 for the normative surface. Bug reports go to
-[the issue tracker](https://github.com/shinybrar/vosfs/issues).
+[the issue tracker](https://github.com/opencadc/vostools/issues).

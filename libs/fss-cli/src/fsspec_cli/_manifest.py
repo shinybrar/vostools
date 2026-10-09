@@ -3,7 +3,7 @@
 Recursive copy plans the whole transfer before it mutates anything, so this
 module turns a backend's breadth-first ``_ls`` listings into an immutable manifest of
 entries — or refuses. Per
-:doc:`ADR 0006 <../../../docs/adr/0006-treat-backend-results-as-untrusted-input>`,
+:doc:`ADR 0006 <../../../../docs/adr/0006-treat-backend-results-as-untrusted-input>`,
 every field of every returned row is validated here: a malformed path or a
 duplicated child is not a rendering bug when the caller will go on to *delete
 or overwrite* along these paths.

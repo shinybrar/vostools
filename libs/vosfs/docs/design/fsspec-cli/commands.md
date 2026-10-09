@@ -301,7 +301,7 @@ Without checksums, skipping saves writes but still reads both objects.
 
 This policy is specific to recursive copy; the preceding non-recursive profile
 keeps its existing metadata proof. See
-[ADR 0009](../../adr/0009-skip-content-identical-recursive-copies.md).
+[ADR 0009](../../../../../docs/adr/0009-skip-content-identical-recursive-copies.md).
 
 Dot segments and a source root operand are rejected up front:
 

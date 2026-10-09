@@ -12,7 +12,7 @@ IVOA VOSpace 2.1 conformance.
 ## Install
 
 ```bash
-uv add git+https://github.com/shinybrar/vosfs@main
+uv add "git+https://github.com/opencadc/vostools@main#subdirectory=libs/vosfs"
 ```
 
 ## Authenticated quickstart
@@ -54,7 +54,7 @@ finally:
 - [fsspec-cli](cli/index.md) turns this (or any async fsspec filesystem) into
   shell-shaped commands inside your own CLI.
 - The normative surface is the capability contract in
-  [`docs/design/trd.md`](https://github.com/shinybrar/vosfs/blob/main/docs/design/trd.md).
+  [`libs/vosfs/docs/design/trd.md`](https://github.com/opencadc/vostools/blob/main/libs/vosfs/docs/design/trd.md).
 
 To contribute, follow the
-[contributor guide](https://github.com/shinybrar/vosfs/blob/main/CONTRIBUTING.md).
+[contributor guide](https://github.com/opencadc/vostools/blob/main/CONTRIBUTING.md).

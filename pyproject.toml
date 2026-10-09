@@ -9,22 +9,31 @@ package = false
 
 [tool.uv.workspace]
 members = ["libs/*"]
-# Imported from shinybrar/vosfs; held out of the workspace, ty and pre-commit until they are joined.
-exclude = ["libs/vosfs", "libs/fss-cli"]
 
 [dependency-groups]
 dev = [
     "commitizen>=4.19.2,<5",
+    "mkdocstrings-python>=2.0.5",
     "pre-commit>=4.6.2",
     "pymarkdownlnt>=0.9.40",
+    "pytest>=9.1.1",
+    "pyyaml>=6.0.2",
     "ruff>=0.16.10",
     "ty>=0.0.85",
+    "zensical>=0.0.50",
 ]
+
+# Repository contract tests only; each package configures pytest in its own pyproject.toml.
+[tool.pytest]
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+testpaths = ["tests/repo"]
 
 # Repository policy. A package that is not yet clean extends this table with a narrower
 # select (see libs/vos/pyproject.toml) and drops the override once it complies.
 [tool.ruff]
 line-length = 120
+per-file-target-version = { "tests/repo/*.py" = "py312" } # Contract tests use tomllib; CI runs them on 3.12.
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
@@ -55,13 +64,18 @@ docstring-code-format = true
 
 [tool.ty.src]
 include = ["libs/*/src"]
-exclude = ["libs/vosfs", "libs/fss-cli"]
 
 # vos type checking ratchet: these rules report as warnings in vos until its findings are
 # fixed; every other rule is an error. Remove a rule from the list once vos is clean for it.
 [[tool.ty.overrides]]
 include = ["libs/vos/src/**"]
 rules = { invalid-argument-type = "warn", no-matching-overload = "warn", unresolved-attribute = "warn", unsupported-operator = "warn" }
+
+# vosfs ratchet: its _walk and _rm hooks do not yet match the signatures ty infers for
+# fsspec's AsyncFileSystem. Drop this override once they do.
+[[tool.ty.overrides]]
+include = ["libs/vosfs/src/**"]
+rules = { invalid-method-override = "warn" }
 
 [tool.ty.terminal]
 error-on-warning = false

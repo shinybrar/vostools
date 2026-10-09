@@ -238,6 +238,6 @@ app.add_typer(App(sources).typer_app, name="fs")
 ## Reference
 
 The full normative contract lives in
-[`docs/design/fsspec-cli/`](https://github.com/shinybrar/vosfs/blob/main/docs/design/fsspec-cli/),
+[`libs/vosfs/docs/design/fsspec-cli/`](https://github.com/opencadc/vostools/blob/main/libs/vosfs/docs/design/fsspec-cli/),
 with architecture decisions in
-[`docs/adr/`](https://github.com/shinybrar/vosfs/blob/main/docs/adr/).
+[`docs/adr/`](https://github.com/opencadc/vostools/blob/main/docs/adr/).

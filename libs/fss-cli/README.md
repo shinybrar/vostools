@@ -1,6 +1,6 @@
 # fsspec-cli
 
-[![CI](https://github.com/shinybrar/vosfs/actions/workflows/ci.yml/badge.svg)](https://github.com/shinybrar/vosfs/actions/workflows/ci.yml)
+[![CI](https://github.com/opencadc/vostools/actions/workflows/quality.yml/badge.svg)](https://github.com/opencadc/vostools/actions/workflows/quality.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue)](LICENSE)
 
@@ -12,7 +12,7 @@ CLI. It installs no executable and no module entry point.
 ## Install
 
 ```bash
-uv add "git+https://github.com/shinybrar/vosfs@main#subdirectory=src/fsspec-cli"
+uv add "git+https://github.com/opencadc/vostools@main#subdirectory=libs/fss-cli"
 ```
 
 ## Quickstart
@@ -48,7 +48,7 @@ python app.py fs cp local:/results.csv archive:/2026/results.csv
 
 `memory` keeps the example runnable with no setup; a real host maps the
 filesystems it serves. See the
-[Overview](https://shinybrar.github.io/vosfs/cli/) for the same app wired to
+[Overview](https://opencadc.github.io/vostools/cli/) for the same app wired to
 local disk plus a remote VOSpace archive.
 
 ## Commands
@@ -72,10 +72,10 @@ App({"data": data_source}, capabilities={"recursion": {"remove": True}})
 
 | For | Read |
 | --- | --- |
-| Embedding it: sources, lifecycle, capabilities, exit statuses | [Integration guide](https://shinybrar.github.io/vosfs/cli/integration/) |
-| What each command does | [Command reference](https://shinybrar.github.io/vosfs/cli/commands/) |
-| The public API | [API reference](https://shinybrar.github.io/vosfs/cli/api-reference/) |
-| The normative contract and its rationale | [`docs/design/fsspec-cli/`](../../docs/design/fsspec-cli/) |
+| Embedding it: sources, lifecycle, capabilities, exit statuses | [Integration guide](https://opencadc.github.io/vostools/cli/integration/) |
+| What each command does | [Command reference](https://opencadc.github.io/vostools/cli/commands/) |
+| The public API | [API reference](https://opencadc.github.io/vostools/cli/api-reference/) |
+| The normative contract and its rationale | [`docs/design/fsspec-cli/`](../vosfs/docs/design/fsspec-cli/) |
 | Architecture decisions | [`docs/adr/`](../../docs/adr/) |
 
 ## Scope

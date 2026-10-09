@@ -29,7 +29,7 @@ Two rules make best-effort output safe:
 ## 2. Interface ownership
 
 Interface ownership is fixed by
-[ADR 0005](../../adr/0005-define-typer-owned-commands-and-callback-extensions.md).
+[ADR 0005](../../../../../docs/adr/0005-define-typer-owned-commands-and-callback-extensions.md).
 
 **Typer owns** option parsing, type conversion, argument arity, the `--`
 terminator, `--help`, and framework usage errors. Typer's exact rendered
@@ -145,8 +145,8 @@ output failure itself. Commands whose output is a single buffered write use
 
 ## 8. Source lifecycle
 
-Per [ADR 0002](../../adr/0002-own-async-filesystems-per-invocation.md) and
-[ADR 0003](../../adr/0003-acquire-referenced-async-filesystem-sources.md):
+Per [ADR 0002](../../../../../docs/adr/0002-own-async-filesystems-per-invocation.md) and
+[ADR 0003](../../../../../docs/adr/0003-acquire-referenced-async-filesystem-sources.md):
 
 - The host supplies each source as a callable returning a **fresh** async
   context manager per invocation. The library owns the yielded filesystem for
@@ -209,7 +209,7 @@ VOSpace group and creator interpretation lives in vosfs, never in this library.
 Full access fields and raw properties remain in info's `extra` mapping.
 All displayed strings MUST be free of NUL, newline, and carriage return.
 
-See [ADR 0008](../../adr/0008-render-shell-shaped-long-listings.md), which
+See [ADR 0008](../../../../../docs/adr/0008-render-shell-shaped-long-listings.md), which
 supersedes adaptive column omission. This is a parsable-output change.
 
 ## 11. Flag conventions

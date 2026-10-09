@@ -1,6 +1,4 @@
 default_install_hook_types: [pre-commit, commit-msg]
-# Imported packages are checked by their own configuration once they join the workspace.
-exclude: ^libs/(vosfs|fss-cli)/
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -43,9 +41,10 @@ repos:
 
       - id: pymarkdown
         name: PyMarkdown
-        # MD013 line length is handled by the editor. MD030/MD033/MD046 conflict
-        # with the MkDocs/Material authoring model the user docs use.
-        entry: uv run --locked pymarkdown --disable-rules MD013,MD030,MD033,MD046 scan
+        # MD013 line length is handled by the editor. MD030/MD033/MD046/MD050 conflict
+        # with the MkDocs/Material authoring model the user docs use (grid cards and their
+        # __Title__ markers). MD051 cannot resolve attr_list heading anchors such as {#ls}.
+        entry: uv run --locked pymarkdown --disable-rules MD013,MD030,MD033,MD046,MD050,MD051 scan
         language: unsupported
         types: [markdown]
         exclude: (^|/)CHANGELOG\.md$
