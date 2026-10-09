@@ -1,0 +1,57 @@
+[project]
+name = "fsspec-cli"
+version = "0.10.0"
+description = "Library-only POSIX-shaped commands for async fsspec filesystems"
+readme = "README.md"
+authors = [
+    { name = "Shiny Brar  (he/il)", email = "charanjotbrar@gmail.com" }
+]
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+keywords = ["fsspec", "cli", "posix", "typer", "filesystem"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Filesystems",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "fsspec>=2026.6.0",
+    "typer>=0.27.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/shinybrar/vosfs"
+Repository = "https://github.com/shinybrar/vosfs"
+Issues = "https://github.com/shinybrar/vosfs/issues"
+Changelog = "https://github.com/shinybrar/vosfs/blob/main/src/fsspec-cli/CHANGELOG.md"
+
+[build-system]
+requires = ["uv_build>=0.11.29,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+source-include = ["CHANGELOG.md", "tests/**"]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.27",
+    "pytest>=9.1.1",
+    "vosfs",
+]
+
+[tool.uv.sources]
+vosfs = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
