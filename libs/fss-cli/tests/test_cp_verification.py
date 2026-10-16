@@ -11,12 +11,15 @@ from typing import TYPE_CHECKING
 
 import pytest
 import typer
+import typer.main
 from fsspec.asyn import AsyncFileSystem
 from fsspec.callbacks import DEFAULT_CALLBACK, TqdmCallback
 
+from fss_cli import App
 from fss_cli._cp import _progress_callback
 
-from ._support import _cp_verified, _invoke
+from ._ansi import strip_ansi
+from ._support import _cp_verified, _invoke, _source_must_not_run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -474,15 +477,17 @@ def test_cp_metadata_wait_rejects_negative_seconds() -> None:
     result = _invoke("cp", ["--metadata-wait", "-1", "memory:/a", "memory:/b"])
 
     assert result.exit_code == 2
-    assert "--metadata-wait" in result.stderr
+    assert "--metadata-wait" in strip_ansi(result.stderr)
 
 
-def test_cp_help_documents_metadata_wait() -> None:
-    result = _invoke("cp", ["--help"])
+@pytest.mark.parametrize("copy", [True, False], ids=["recursive-copy", "file-copy-only"])
+def test_cp_declares_metadata_wait_in_both_signatures(*, copy: bool) -> None:
+    app = App({"memory": _source_must_not_run}, capabilities={"recursion": {"copy": copy}})
+    command = typer.main.get_command(app.typer_app).commands["cp"]
 
-    assert result.exit_code == 0
-    assert "--metadata-wait" in result.stdout
-    assert "SECONDS" in result.stdout
+    (option,) = [parameter for parameter in command.params if "--metadata-wait" in parameter.opts]
+
+    assert (option.default, option.metavar, option.help is not None) == (60, "SECONDS", True)
 
 
 def test_cp_rejects_stale_info_for_every_source_in_a_multi_file_copy(clock: _Clock) -> None:
