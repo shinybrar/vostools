@@ -38,7 +38,7 @@ from ._matrix_support import (
     _memory_source,
     _ProbedSource,
 )
-from ._support import _source_must_not_run
+from ._support import _cp_verified, _source_must_not_run
 
 _SYNC_MV_MESSAGE = "public sync mv must not be called"
 
@@ -586,7 +586,11 @@ def test_cross_source_cp_between_adapted_local_and_memory(
 
     result = _invoke(app, "cp", [source_operand, destination_operand])
 
-    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+    assert (result.exit_code, result.stdout, result.stderr) == (
+        0,
+        "",
+        _cp_verified(destination_operand, "uploaded", len(payload)),
+    )
     if direction == "local-to-memory":
         assert memory.cat("/docs/copy.bin") == payload
     else:

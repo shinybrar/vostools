@@ -16,6 +16,11 @@ def _source_must_not_run() -> NoReturn:
     raise AssertionError
 
 
+def _cp_verified(operand: str, verb: str, size: int) -> str:
+    """Return the two stderr lines ``cp`` writes for one verified file."""
+    return f"cp: {operand}: {verb} {size} bytes\ncp: {operand}: verified {size} bytes\n"
+
+
 def _invoke(
     command: str,
     arguments: list[str],

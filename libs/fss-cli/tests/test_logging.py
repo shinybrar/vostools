@@ -15,7 +15,7 @@ from typer.testing import CliRunner
 from fss_cli import App
 from fss_cli._logging import _redact
 
-from ._support import _RecordingSource
+from ._support import _cp_verified, _RecordingSource
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Mapping
@@ -90,7 +90,11 @@ def test_same_source_copy_logs_one_verified_record_per_file(
         ["cp", "memory:/docs/a.txt", "memory:/docs/b.txt", "memory:/"],
     )
 
-    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+    assert (result.exit_code, result.stdout, result.stderr) == (
+        0,
+        "",
+        _cp_verified("memory:/a.txt", "copied", 3) + _cp_verified("memory:/b.txt", "copied", 5),
+    )
     records = _info_records(caplog)
     assert [_summary(record) for record in records] == [
         ("copied", "memory:/docs/a.txt", "memory:/a.txt", 3),
@@ -114,7 +118,10 @@ def test_cross_source_copy_logs_a_staged_record_and_debug_staging(
         ["cp", "memory:/docs/a.txt", f"local:{tmp_path.as_posix()}"],
     )
 
-    assert (result.exit_code, result.stderr) == (0, "")
+    assert (result.exit_code, result.stderr) == (
+        0,
+        _cp_verified(f"local:{tmp_path.as_posix()}/a.txt", "uploaded", 3),
+    )
     assert [_summary(record) for record in _info_records(caplog)] == [
         ("staged", "memory:/docs/a.txt", f"local:{tmp_path.as_posix()}/a.txt", 3),
     ]
@@ -190,7 +197,7 @@ def test_records_never_contain_query_strings_or_tokens(
         ["cp", "memory:/docs/a.txt?token=secret", "memory:/b.txt?token=secret#x"],
     )
 
-    assert (result.exit_code, result.stderr) == (0, "")
+    assert (result.exit_code, result.stderr) == (0, _cp_verified("memory:/b.txt?token=secret#x", "copied", 3))
     assert _info_records(caplog)
     for record in caplog.records:
         rendered = f"{record.getMessage()} {record.__dict__}"
