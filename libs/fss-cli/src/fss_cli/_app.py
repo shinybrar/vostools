@@ -140,7 +140,7 @@ _MetadataWait: TypeAlias = Annotated[
         metavar="SECONDS",
         min=0,
         help=(
-            "Seconds to poll after a successful file copy while destination info "
+            "Seconds to poll after each successful file copy while destination info "
             "still shows no size, or the size from before this copy."
         ),
     ),

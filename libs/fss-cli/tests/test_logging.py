@@ -15,7 +15,7 @@ from typer.testing import CliRunner
 from fss_cli import App
 from fss_cli._logging import _redact
 
-from ._support import _cp_verified, _RecordingSource
+from ._support import _cp_verified, _RecordingSource, _verified_uploads
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Mapping
@@ -160,7 +160,8 @@ def test_recursive_copy_rerun_logs_skipped_identical_files(
 
     first = _run({"memory": source}, arguments)
 
-    assert (first.exit_code, first.stderr) == (0, "")
+    assert first.exit_code == 0
+    assert _verified_uploads(first.stderr) == {"memory:/out/docs/a.txt": 3, "memory:/out/docs/sub/b.txt": 5}
     assert sorted(_summary(record) for record in _info_records(caplog)) == [
         ("staged", "memory:/docs/a.txt", "memory:/out/docs/a.txt", 3),
         ("staged", "memory:/docs/sub/b.txt", "memory:/out/docs/sub/b.txt", 5),
@@ -230,5 +231,9 @@ def test_no_handler_means_nothing_is_printed(
 
     result = _run({"memory": source}, ["cp", "-R", "memory:/docs", "memory:/out"])
 
-    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+    assert (result.exit_code, result.stdout, result.stderr) == (
+        0,
+        "",
+        _cp_verified("memory:/out/docs/a.txt", "uploaded", 3),
+    )
     assert capfd.readouterr() == ("", "")

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 import inspect
 import logging
 import os
-import sys
 import tempfile
 import time
 from collections.abc import Mapping
@@ -14,8 +12,6 @@ from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
-
-from fsspec.callbacks import TqdmCallback
 
 from ._command import (
     _CommandFailureError,
@@ -30,21 +26,32 @@ from ._command import (
 )
 from ._diagnostics import _render_diagnostic_value
 from ._logging import _location, _log_file_operation, _redact
-from ._manifest import _TOKEN_ALIASES, _shared_tokens_match
+from ._manifest import _shared_tokens_match
 from ._path import _lexical_basename, _lexical_join, _lexical_parent
+from ._post_copy import (
+    _DEFAULT_METADATA_WAIT_SECONDS,
+    _await_verified,
+    _PreviousFile,
+    _report,
+    _require_file_size,
+    _resolved_operand,
+    _TransferProof,
+    _verification_tokens,
+)
+from ._progress import _transfer_display
 from ._recursive_cp import _canonical_operand, _run_recursive_cp
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection
 
     from fsspec.asyn import AsyncFileSystem
+    from fsspec.callbacks import Callback
 
     from ._app import AsyncFilesystemSource
+    from ._progress import _Transfer, _TransferDisplay
 
 _MIN_OPERAND_COUNT = 2
 _LOGGER = logging.getLogger(__name__)
-_DEFAULT_METADATA_WAIT_SECONDS = 60
-_METADATA_POLL_SECONDS = 5
 
 
 @dataclass(frozen=True)
@@ -77,32 +84,10 @@ class _CpFailure(_Failure):
 
 
 @dataclass(frozen=True)
-class _TransferProof:
-    expected_size: int
-    tokens: tuple[tuple[str, frozenset[str | bytes]], ...]
-
-
-@dataclass(frozen=True)
-class _PreviousFile:
-    """The file a resolved destination held before the copy, from resolution ``_info``."""
-
-    size: int | None
-    tokens: Mapping[str, frozenset[str | bytes]]
-
-
-@dataclass(frozen=True)
 class _PreparedTransfer:
     proof: _TransferProof
     resolved: str
     previous: _PreviousFile | None
-
-
-@dataclass(frozen=True)
-class _Verdict:
-    """One classified post-copy ``_info``; ``text`` is ``None`` once verified."""
-
-    text: str | None
-    stale: bool = False
 
 
 def _cp_plan(
@@ -148,18 +133,6 @@ async def _require_directory(
     if info["type"] != "directory":
         return _CpFailure(destination, incompatible="result")
     return None
-
-
-def _require_file_size(info: object) -> int | None:
-    if not isinstance(info, Mapping):
-        return None
-    result_type = info.get("type")
-    if not isinstance(result_type, str) or result_type != "file":
-        return None
-    size = info.get("size")
-    if not isinstance(size, int) or isinstance(size, bool) or size < 0:
-        return None
-    return size
 
 
 def _require_source_file_size(
@@ -283,7 +256,7 @@ async def _stage_remote(
     filesystem: AsyncFileSystem,
     remote: str,
     prefix: str,
-    progress: str,
+    callback: Callback,
 ) -> tuple[str | None, Exception | None]:
     try:
         descriptor, temporary = tempfile.mkstemp(prefix=prefix)
@@ -299,8 +272,7 @@ async def _stage_remote(
         raise
 
     try:
-        with _progress_callback(progress) as callback:
-            await _drain_current_operation(filesystem._get_file(remote, temporary, callback=callback))
+        await _drain_current_operation(filesystem._get_file(remote, temporary, callback=callback))
     except Exception as error:  # noqa: BLE001 - staging download boundary.
         _remove_temporary(temporary)
         return None, error
@@ -323,19 +295,6 @@ def _remove_temporary(path: str) -> Exception | None:
 def _discard_temporary(path: str) -> None:
     with suppress(BaseException):
         _remove_temporary(path)
-
-
-def _verification_tokens(info: object) -> dict[str, frozenset[str | bytes]]:
-    if not isinstance(info, Mapping):
-        return {}
-    tokens: dict[str, frozenset[str | bytes]] = {}
-    for normalized, aliases in _TOKEN_ALIASES:
-        values = frozenset(
-            value for alias in aliases if (type(value := info.get(alias)) is str or type(value) is bytes)
-        )
-        if values:
-            tokens[normalized] = values
-    return tokens
 
 
 def _freeze_transfer_proof(
@@ -400,39 +359,6 @@ async def _verify_transfer(  # noqa: PLR0913 - one explicit transfer-proof bound
     return None
 
 
-def _post_copy_verdict(  # noqa: PLR0911 - one return per verification outcome.
-    info: object,
-    proof: _TransferProof,
-    previous: _PreviousFile | None,
-    mutation: str,
-) -> _Verdict:
-    """Classify one post-copy destination ``_info`` against the frozen proof.
-
-    Stale means the reported metadata still looks like no size, or like the
-    file that was there before this copy; only a stale verdict is polled.
-    """
-    if not isinstance(info, Mapping) or not isinstance(info.get("type"), str):
-        return _Verdict("verification failure")
-    if info["type"] != "file":
-        return _Verdict(f"not a file after {mutation}")
-    observed = _require_file_size(info)
-    if observed is None:
-        return _Verdict("verification failure")
-    expected = proof.expected_size
-    if observed != expected:
-        if observed == 0 or (previous is not None and observed == previous.size):
-            return _Verdict(f"not yet verified (size {observed}, expected {expected})", stale=True)
-        return _Verdict(f"size mismatch (expected {expected}, observed {observed})")
-    tokens = _verification_tokens(info)
-    differing = [name for name, values in proof.tokens if name in tokens and tokens[name] != values]
-    if not differing:
-        return _Verdict(None)
-    changed = [name for name in differing if previous is None or previous.tokens.get(name) != tokens[name]]
-    if changed:
-        return _Verdict(f"metadata mismatch ({changed[0]})")
-    return _Verdict(f"not yet verified ({differing[0]} unchanged)", stale=True)
-
-
 async def _await_verified_copy(
     filesystem: AsyncFileSystem,
     prepared: _PreparedTransfer,
@@ -441,41 +367,17 @@ async def _await_verified_copy(
     mutation: str,
     wait: int,
 ) -> _CpFailure | None:
-    """Read destination ``_info`` until it matches the proof, stops being stale, or ``wait`` ends."""
-    deadline = time.monotonic() + wait
-    while True:
-        try:
-            info = await _drain_current_operation(filesystem._info(prepared.resolved))
-        except Exception as error:  # noqa: BLE001 - post-copy verify is residue-bearing.
-            rendered_class = _render_diagnostic_value(type(error).__name__)
-            return _CpFailure(
-                destination,
-                backend_error=error,
-                residue=True,
-                verdict=f"verification failure ({rendered_class})",
-            )
-        verdict = _post_copy_verdict(info, prepared.proof, prepared.previous, mutation)
-        if verdict.text is None:
-            return None
-        remaining = deadline - time.monotonic()
-        if not verdict.stale or remaining <= 0:
-            return _CpFailure(destination, residue=True, verdict=verdict.text)
-        await asyncio.sleep(min(_METADATA_POLL_SECONDS, remaining))
-
-
-def _progress_callback(label: str) -> TqdmCallback:
-    """Return one byte progress bar for a single transfer, drawn only on a TTY stderr."""
-    return TqdmCallback(
-        tqdm_kwargs={
-            "desc": _render_diagnostic_value(label),
-            "unit": "B",
-            "unit_scale": True,
-            "unit_divisor": 1024,
-            "file": sys.stderr,
-            "disable": None,
-            "leave": True,
-        }
+    unverified = await _await_verified(
+        filesystem,
+        prepared.resolved,
+        prepared.proof,
+        prepared.previous,
+        mutation=mutation,
+        wait=wait,
     )
+    if unverified is None:
+        return None
+    return _CpFailure(destination, backend_error=unverified.error, residue=True, verdict=unverified.text)
 
 
 def _accepts_callback(hook: Callable[..., object]) -> bool:
@@ -487,28 +389,13 @@ def _accepts_callback(hook: Callable[..., object]) -> bool:
     return "callback" in parameters
 
 
-def _resolved_operand(destination: _MappedOperand, resolved: str) -> _MappedOperand:
-    return _MappedOperand(
-        spelling=f"{destination.name}:{resolved}",
-        name=destination.name,
-        path=resolved,
-    )
-
-
-def _report(command: str, operand: _MappedOperand, outcome: str) -> None:
-    """Write one copy outcome line to stderr; a failed write ends the invocation."""
-    try:
-        _render_operand_diagnostic(command, operand, outcome)
-    except Exception as error:
-        raise _CommandFailureError(error=error, render=False, propagate=error) from error
-
-
-async def _confirmed_cross_source_cp_file(  # noqa: C901, PLR0912 - explicit copy outcomes.
+async def _confirmed_cross_source_cp_file(  # noqa: C901, PLR0912, PLR0913 - explicit copy outcomes.
     command: str,
     request: _CpRequest,
     source_filesystem: AsyncFileSystem,
     destination_filesystem: AsyncFileSystem,
     *,
+    transfer: _Transfer,
     metadata_wait: int,
 ) -> _CpFailure | None:
     started = time.monotonic()
@@ -529,7 +416,7 @@ async def _confirmed_cross_source_cp_file(  # noqa: C901, PLR0912 - explicit cop
         source_filesystem,
         request.source.path,
         "fss-cli-cp-",
-        request.source.spelling,
+        transfer.phase("download", request.source.spelling),
     )
     if staging_error is not None or temporary is None:
         return _CpFailure(
@@ -562,15 +449,14 @@ async def _confirmed_cross_source_cp_file(  # noqa: C901, PLR0912 - explicit cop
 
         if primary_failure is None:
             try:
-                with _progress_callback(target.spelling) as callback:
-                    await _drain_current_operation(
-                        destination_filesystem._put_file(
-                            temporary,
-                            resolved,
-                            mode="overwrite",
-                            callback=callback,
-                        )
+                await _drain_current_operation(
+                    destination_filesystem._put_file(
+                        temporary,
+                        resolved,
+                        mode="overwrite",
+                        callback=transfer.phase("upload", target.spelling),
                     )
+                )
             except Exception as error:  # noqa: BLE001 - mutation may leave residue.
                 primary_failure = _CpFailure(
                     request.destination,
@@ -579,6 +465,7 @@ async def _confirmed_cross_source_cp_file(  # noqa: C901, PLR0912 - explicit cop
                     residue=True,
                 )
 
+        transfer.finish()
         if primary_failure is None:
             _report(command, target, f"uploaded {proof.expected_size} bytes")
             primary_failure = await _await_verified_copy(
@@ -613,6 +500,7 @@ async def _confirmed_cp_file(
     request: _CpRequest,
     filesystem: AsyncFileSystem,
     *,
+    transfer: _Transfer,
     metadata_wait: int,
 ) -> _CpFailure | None:
     started = time.monotonic()
@@ -627,10 +515,9 @@ async def _confirmed_cp_file(
 
     try:
         if _accepts_callback(filesystem._cp_file):
-            with _progress_callback(target.spelling) as callback:
-                await _drain_current_operation(
-                    filesystem._cp_file(request.source.path, resolved, callback=callback),
-                )
+            await _drain_current_operation(
+                filesystem._cp_file(request.source.path, resolved, callback=transfer.phase("copy", target.spelling)),
+            )
         else:
             await _drain_current_operation(filesystem._cp_file(request.source.path, resolved))
     except Exception as error:  # noqa: BLE001 - mutation may leave destination residue.
@@ -641,6 +528,7 @@ async def _confirmed_cp_file(
             residue=True,
         )
 
+    transfer.finish()
     _report(command, target, f"copied {proof.expected_size} bytes")
     failure = await _await_verified_copy(
         filesystem,
@@ -725,33 +613,37 @@ def _render_failure(  # noqa: C901 - stable diagnostic categories.
         _render_backend_failure(command, failure.operand, failure.backend_error)
 
 
-async def _run_cp(
+async def _copy_requests(
     command: str,
     plan: _CpPlan,
-    sources: Mapping[str, AsyncFilesystemSource],
+    filesystems: Mapping[str, AsyncFileSystem],
+    display: _TransferDisplay,
 ) -> None:
-    async def operation(filesystems: Mapping[str, AsyncFileSystem]) -> None:
-        if plan.recursive:
-            await _run_recursive_cp(
-                command,
-                plan.requests[0].source,
-                plan.requests[0].destination,
-                filesystems,
-            )
-            return
+    if plan.recursive:
+        await _run_recursive_cp(
+            command,
+            plan.requests[0].source,
+            plan.requests[0].destination,
+            filesystems,
+            display=display,
+            metadata_wait=plan.metadata_wait,
+        )
+        return
 
-        failure = None
-        if plan.require_directory:
-            failure = await _require_directory(
-                plan.requests[0].destination,
-                filesystems[plan.requests[0].destination.name],
-            )
-        for request in plan.requests if failure is None else ():
+    failure = None
+    if plan.require_directory:
+        failure = await _require_directory(
+            plan.requests[0].destination,
+            filesystems[plan.requests[0].destination.name],
+        )
+    for request in plan.requests if failure is None else ():
+        with display.transfer() as transfer:
             if request.source.name == request.destination.name:
                 failure = await _confirmed_cp_file(
                     command,
                     request,
                     filesystems[request.source.name],
+                    transfer=transfer,
                     metadata_wait=plan.metadata_wait,
                 )
             else:
@@ -760,23 +652,34 @@ async def _run_cp(
                     request,
                     filesystems[request.source.name],
                     filesystems[request.destination.name],
+                    transfer=transfer,
                     metadata_wait=plan.metadata_wait,
                 )
-            if failure is not None:
-                break
         if failure is not None:
-            try:
-                _render_failure(command, failure)
-            except Exception as error:
-                raise _CommandFailureError(
-                    error=failure.backend_error,
-                    render=False,
-                    propagate=error,
-                ) from error
+            break
+    if failure is not None:
+        try:
+            _render_failure(command, failure)
+        except Exception as error:
             raise _CommandFailureError(
                 error=failure.backend_error,
                 render=False,
-            )
+                propagate=error,
+            ) from error
+        raise _CommandFailureError(
+            error=failure.backend_error,
+            render=False,
+        )
+
+
+async def _run_cp(
+    command: str,
+    plan: _CpPlan,
+    sources: Mapping[str, AsyncFilesystemSource],
+) -> None:
+    async def operation(filesystems: Mapping[str, AsyncFileSystem]) -> None:
+        with _transfer_display() as display:
+            await _copy_requests(command, plan, filesystems, display)
 
     await _run_mapped_command(
         command,

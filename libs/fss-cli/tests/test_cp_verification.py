@@ -1,28 +1,34 @@
-"""``cp`` progress bars and the post-copy metadata wait, over scripted fake filesystems."""
+"""``cp`` Rich progress bars and the post-copy metadata wait, over scripted fake filesystems."""
 
 from __future__ import annotations
 
+import asyncio
 import io
 import sys
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from types import MappingProxyType, SimpleNamespace
-from typing import TYPE_CHECKING
+from types import MappingProxyType, MethodType, SimpleNamespace
+from typing import TYPE_CHECKING, Any, NoReturn
 
 import pytest
 import typer
 import typer.main
 from fsspec.asyn import AsyncFileSystem
-from fsspec.callbacks import DEFAULT_CALLBACK, TqdmCallback
+from fsspec.callbacks import DEFAULT_CALLBACK
+from rich import progress as rich_progress
+from rich.text import Text
 
 from fss_cli import App
-from fss_cli._cp import _progress_callback
+from fss_cli._progress import _draws_progress, _StderrProxy, _TaskCallback
 
 from ._ansi import strip_ansi
-from ._support import _cp_verified, _invoke, _source_must_not_run
+from ._support import _cp_verified, _invoke, _outcomes_by_file, _source_must_not_run
+from .test_recursive_cp import _source as _tree_source
+from .test_recursive_cp import _TreeFileSystem
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Awaitable, Callable
 
     from fsspec.callbacks import Callback
 
@@ -45,9 +51,70 @@ class _Clock:
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> _Clock:
     fake = _Clock()
-    monkeypatch.setattr("fss_cli._cp.time", SimpleNamespace(monotonic=fake.monotonic))
-    monkeypatch.setattr("fss_cli._cp.asyncio", SimpleNamespace(sleep=fake.sleep))
+    monkeypatch.setattr("fss_cli._post_copy.time", SimpleNamespace(monotonic=fake.monotonic))
+    monkeypatch.setattr("fss_cli._post_copy.asyncio", SimpleNamespace(sleep=fake.sleep))
     return fake
+
+
+class _Bars:
+    """Task calls on a non-drawing ``Progress``, interleaved with ``cp``'s stderr lines."""
+
+    def __init__(self) -> None:
+        self.events: list[tuple[object, ...]] = []
+        self.columns: tuple[object, ...] = ()
+        self.options: dict[str, Any] = {}
+        self.created = 0
+        self.stderr: object = None
+        self.stderr_during_copy: object = None
+        self.visible_peak: list[str] = []
+        self.progress: rich_progress.Progress
+
+    def live_descriptions(self) -> list[str]:
+        return [str(task.description) for task in self.progress.tasks if task.visible]
+
+
+@pytest.fixture
+def bars(monkeypatch: pytest.MonkeyPatch) -> _Bars:
+    recorded = _Bars()
+    original_progress = rich_progress.Progress
+    original_echo = typer.echo
+
+    class RecordingProgress(original_progress):
+        def __init__(self, *columns: Any, **options: Any) -> None:
+            recorded.columns, recorded.options = columns, options
+            recorded.created += 1
+            recorded.stderr = sys.stderr
+            recorded.progress = self
+            super().__init__(*columns, **{**options, "disable": True})
+
+        def add_task(self, description: str, *args: Any, **kwargs: Any) -> rich_progress.TaskID:
+            recorded.stderr_during_copy = sys.stderr
+            task = super().add_task(description, *args, **kwargs)
+            recorded.events.append(("add", task, description, kwargs.get("visible")))
+            return task
+
+        def reset(self, task_id: rich_progress.TaskID, **kwargs: Any) -> None:
+            super().reset(task_id, **kwargs)
+            recorded.events.append(("reset", task_id, kwargs.get("description"), kwargs.get("visible")))
+
+        def update(self, task_id: rich_progress.TaskID, **kwargs: Any) -> None:
+            super().update(task_id, **kwargs)
+            recorded.events.append(("update", task_id, kwargs.get("completed"), kwargs.get("total")))
+            recorded.visible_peak = max(recorded.visible_peak, recorded.live_descriptions(), key=len)
+
+        def remove_task(self, task_id: rich_progress.TaskID) -> None:
+            super().remove_task(task_id)
+            recorded.events.append(("remove", task_id))
+
+    def echo(message: object = None, **kwargs: Any) -> None:
+        if kwargs.get("err") is True:
+            recorded.events.append(("line", str(message)))
+        original_echo(message, **kwargs)
+
+    monkeypatch.setattr("fss_cli._progress._draws_progress", lambda: True)
+    monkeypatch.setattr("fss_cli._progress.rich_progress.Progress", RecordingProgress)
+    monkeypatch.setattr(typer, "echo", echo)
+    return recorded
 
 
 class _ScriptedFileSystem(AsyncFileSystem):
@@ -71,7 +138,7 @@ class _ScriptedFileSystem(AsyncFileSystem):
         self.after_write = {path: list(script) for path, script in (after_write or {}).items()}
         self.written: set[str] = set()
         self.events: list[tuple[str, str]] = []
-        self.callbacks: list[tuple[str, Callback, object]] = []
+        self.callbacks: list[tuple[str, Callback]] = []
 
     async def _info(self, path: str, **kwargs: object) -> object:
         del kwargs
@@ -90,7 +157,7 @@ class _ScriptedFileSystem(AsyncFileSystem):
         raise FileNotFoundError(path)
 
     def _record_callback(self, hook: str, callback: Callback) -> None:
-        self.callbacks.append((hook, callback, sys.stderr))
+        self.callbacks.append((hook, callback))
 
     async def _get_file(
         self,
@@ -129,6 +196,18 @@ class _ScriptedFileSystem(AsyncFileSystem):
         self.events.append(("cp_file", path2))
         self.files[path2] = self.files[path1]
         self.written.add(path2)
+
+
+class _SilentFileSystem(_ScriptedFileSystem):
+    """Accepts fsspec callbacks and never reports bytes through them."""
+
+    async def _get_file(self, rpath: str, lpath: str, **kwargs: object) -> None:
+        del kwargs
+        await super()._get_file(rpath, lpath)
+
+    async def _put_file(self, lpath: str, rpath: str, mode: str = "overwrite", **kwargs: object) -> None:
+        del kwargs
+        await super()._put_file(lpath, rpath, mode)
 
 
 class _ProgressCopyFileSystem(_ScriptedFileSystem):
@@ -372,7 +451,7 @@ def test_cp_interrupt_during_the_wait_keeps_the_destination(monkeypatch: pytest.
     async def interrupt(_seconds: float) -> None:
         raise KeyboardInterrupt
 
-    monkeypatch.setattr("fss_cli._cp.asyncio", SimpleNamespace(sleep=interrupt))
+    monkeypatch.setattr("fss_cli._post_copy.asyncio", SimpleNamespace(sleep=interrupt))
     source, destination = _cross_source([_file(0)])
 
     result = _run_cross(source, destination)
@@ -396,37 +475,195 @@ def test_cp_waits_for_same_source_copies_too(clock: _Clock) -> None:
     assert filesystem.callbacks == []
 
 
-def test_cp_gives_each_transfer_its_own_closed_progress_bar(clock: _Clock) -> None:
+def test_cp_moves_one_bar_from_the_download_to_the_upload(clock: _Clock, bars: _Bars) -> None:
     del clock
     source, destination = _cross_source([_file(_SIZE)])
 
     result = _run_cross(source, destination)
 
-    assert result.exit_code == 0
-    (get_hook, download, download_stream), *rest = source.callbacks
-    ((put_hook, upload, upload_stream),) = destination.callbacks
-    assert rest == []
+    assert (result.exit_code, result.stdout, result.stderr) == (
+        0,
+        "",
+        _cp_verified("dst:/out/data.bin", "uploaded", _SIZE),
+    )
+    ((get_hook, download),) = source.callbacks
+    ((put_hook, upload),) = destination.callbacks
     assert (get_hook, put_hook) == ("get_file", "put_file")
-    assert isinstance(download, TqdmCallback)
-    assert isinstance(upload, TqdmCallback)
-    assert download is not upload
-    assert download.tqdm is None
-    assert upload.tqdm is None
-    common = {"unit": "B", "unit_scale": True, "unit_divisor": 1024, "disable": None, "leave": True}
-    assert download._tqdm_kwargs == {"desc": "src:/in/data.bin", "file": download_stream, **common}
-    assert upload._tqdm_kwargs == {"desc": "dst:/out/data.bin", "file": upload_stream, **common}
+    assert isinstance(download, _TaskCallback)
+    assert isinstance(upload, _TaskCallback)
+    assert bars.events == [
+        ("add", 0, "download src:/in/data.bin", False),
+        ("update", 0, 0, _SIZE),
+        ("update", 0, _SIZE, _SIZE),
+        ("reset", 0, "upload dst:/out/data.bin", False),
+        ("update", 0, 0, _SIZE),
+        ("update", 0, _SIZE, _SIZE),
+        ("remove", 0),
+        ("line", f"cp: dst:/out/data.bin: uploaded {_SIZE} bytes"),
+        ("line", f"cp: dst:/out/data.bin: verified {_SIZE} bytes"),
+    ]
 
 
-def test_cp_passes_a_progress_bar_to_a_same_source_copy_that_accepts_one() -> None:
+def test_cp_draws_one_shared_rich_progress_on_stderr(clock: _Clock, bars: _Bars) -> None:
+    del clock
+    source, destination = _cross_source([_file(_SIZE)])
+
+    assert _run_cross(source, destination).exit_code == 0
+
+    text, bar, remaining = bars.columns
+    assert isinstance(text, rich_progress.TextColumn)
+    assert text.text_format == "[bold blue]{task.description}"
+    assert isinstance(bar, rich_progress.BarColumn)
+    assert bar.bar_width is None
+    assert isinstance(remaining, rich_progress.TimeRemainingColumn)
+    assert bars.options["console"].file is bars.stderr
+    assert (bars.options["transient"], bars.options["redirect_stdout"], bars.options["redirect_stderr"]) == (
+        True,
+        False,
+        False,
+    )
+    assert isinstance(bars.stderr_during_copy, _StderrProxy)
+    assert bars.created == 1
+
+
+def test_cp_escapes_paths_in_the_bar_description(clock: _Clock, bars: _Bars) -> None:
+    del clock
+    source = _ScriptedFileSystem(files={"/in/[bold]data.bin": _PAYLOAD})
+    destination = _ScriptedFileSystem(files={"/out/keep": b""})
+
+    result = _invoke(
+        "cp",
+        ["src:/in/[bold]data.bin", "dst:/out/"],
+        sources={"src": _source(source), "dst": _source(destination)},
+    )
+
+    assert result.exit_code == 0
+    descriptions = [event[2] for event in bars.events if event[0] in {"add", "reset"}]
+    assert [Text.from_markup(f"[bold blue]{description}").plain for description in descriptions] == [
+        "download src:/in/[bold]data.bin",
+        "upload dst:/out/[bold]data.bin",
+    ]
+
+
+def test_cp_gives_a_same_source_copy_that_accepts_a_callback_one_bar(bars: _Bars) -> None:
     filesystem = _ProgressCopyFileSystem(files={"/in/data.bin": _PAYLOAD, "/out/keep": b""})
 
     result = _invoke("cp", ["fs:/in/data.bin", "fs:/out/data.bin"], sources={"fs": _source(filesystem)})
 
     assert (result.exit_code, result.stderr) == (0, _cp_verified("fs:/out/data.bin", "copied", _SIZE))
-    ((hook, callback, _stream),) = filesystem.callbacks
-    assert hook == "cp_file"
-    assert isinstance(callback, TqdmCallback)
-    assert callback._tqdm_kwargs["desc"] == "fs:/out/data.bin"
+    ((hook, callback),) = filesystem.callbacks
+    assert (hook, type(callback)) == ("cp_file", _TaskCallback)
+    assert bars.events[0] == ("add", 0, "copy fs:/out/data.bin", False)
+    assert bars.events[-3:] == [
+        ("remove", 0),
+        ("line", f"cp: fs:/out/data.bin: copied {_SIZE} bytes"),
+        ("line", f"cp: fs:/out/data.bin: verified {_SIZE} bytes"),
+    ]
+
+
+def test_cp_adds_no_bar_for_a_same_source_copy_without_a_callback(clock: _Clock, bars: _Bars) -> None:
+    del clock
+    filesystem = _ScriptedFileSystem(files={"/in/data.bin": _PAYLOAD, "/out/keep": b""})
+
+    result = _invoke("cp", ["fs:/in/data.bin", "fs:/out/data.bin"], sources={"fs": _source(filesystem)})
+
+    assert (result.exit_code, result.stdout, result.stderr) == (
+        0,
+        "",
+        _cp_verified("fs:/out/data.bin", "copied", _SIZE),
+    )
+    assert bars.events == [
+        ("line", f"cp: fs:/out/data.bin: copied {_SIZE} bytes"),
+        ("line", f"cp: fs:/out/data.bin: verified {_SIZE} bytes"),
+    ]
+
+
+def test_cp_keeps_a_bar_hidden_until_the_backend_reports_bytes(clock: _Clock, bars: _Bars) -> None:
+    del clock
+    source = _SilentFileSystem(files={"/in/data.bin": _PAYLOAD})
+    destination = _SilentFileSystem(files={"/out/keep": b""})
+
+    result = _run_cross(source, destination)
+
+    assert result.exit_code == 0
+    assert [event[0] for event in bars.events] == ["add", "reset", "remove", "line", "line"]
+    assert bars.visible_peak == []
+
+
+def test_cp_recursive_shows_one_live_bar_per_in_flight_file(bars: _Bars) -> None:
+    names = ("a.bin", "b.bin", "c.bin")
+    source_entries: dict[str, bytes | None] = {"/": None, "/docs": None}
+    source_entries.update({f"/docs/{name}": name.encode() * 4 for name in names})
+    destination_entries: dict[str, bytes | None] = {"/": None, "/out": None}
+    gate = asyncio.Event()
+    arrived: list[str] = []
+    live_at_gate: list[list[str]] = []
+
+    async def get_file(
+        self: _TreeFileSystem,
+        remote: str,
+        local: str,
+        callback: Callback = DEFAULT_CALLBACK,
+        **kwargs: object,
+    ) -> None:
+        del kwargs
+        payload = self.entries[remote]
+        assert isinstance(payload, bytes)
+        callback.set_size(len(payload))
+        callback.relative_update(1)
+        arrived.append(remote)
+        if len(arrived) == len(names):
+            live_at_gate.append(bars.live_descriptions())
+            gate.set()
+        await gate.wait()
+        Path(local).write_bytes(payload)  # noqa: ASYNC240
+        callback.relative_update(len(payload) - 1)
+
+    async def put_file(
+        self: _TreeFileSystem,
+        local: str,
+        remote: str,
+        mode: str = "overwrite",
+        callback: Callback = DEFAULT_CALLBACK,
+        **kwargs: object,
+    ) -> None:
+        del mode, kwargs
+        payload = Path(local).read_bytes()  # noqa: ASYNC240
+        callback.set_size(len(payload))
+        self.entries[remote] = payload
+        callback.relative_update(len(payload))
+
+    def configure(hook: str, method: Callable[..., Awaitable[None]]) -> Callable[[_TreeFileSystem], None]:
+        def install(filesystem: _TreeFileSystem) -> None:
+            setattr(filesystem, hook, MethodType(method, filesystem))
+
+        return install
+
+    result = _invoke(
+        "cp",
+        ["-R", "src:/docs", "dst:/out/copy"],
+        sources={
+            "src": _tree_source(source_entries, [], configure=configure("_get_file", get_file)),
+            "dst": _tree_source(destination_entries, [], configure=configure("_put_file", put_file)),
+        },
+    )
+
+    assert (result.exit_code, result.stdout) == (0, "")
+    assert live_at_gate == [[f"download src:/docs/{name}" for name in names]]
+    assert _outcomes_by_file(result.stderr) == {
+        f"dst:/out/copy/{name}": ["uploaded 20 bytes", "verified 20 bytes"] for name in names
+    }
+    for task, name in enumerate(names):
+        mine = [event for event in bars.events if event[:2] in {("add", task), ("reset", task), ("remove", task)}]
+        assert mine == [
+            ("add", task, f"download src:/docs/{name}", False),
+            ("reset", task, f"upload dst:/out/copy/{name}", False),
+            ("remove", task),
+        ]
+        removed = bars.events.index(("remove", task))
+        assert removed < bars.events.index(("line", f"cp: dst:/out/copy/{name}: uploaded 20 bytes"))
+    assert bars.progress.tasks == []
+    assert bars.created == 1
 
 
 class _Terminal(io.StringIO):
@@ -434,26 +671,151 @@ class _Terminal(io.StringIO):
         return True
 
 
-@pytest.mark.parametrize(("stream", "drawn"), [(_Terminal(), True), (io.StringIO(), False)], ids=["tty", "pipe"])
-def test_progress_bar_draws_only_on_a_terminal(
+@pytest.mark.parametrize(
+    ("stream", "no_color", "drawn"),
+    [
+        (_Terminal(), None, True),
+        (_Terminal(), "", True),
+        (_Terminal(), "1", False),
+        (io.StringIO(), None, False),
+    ],
+    ids=["tty", "tty-empty-no-color", "tty-no-color", "pipe"],
+)
+def test_bars_draw_only_on_a_terminal_without_no_color(
     monkeypatch: pytest.MonkeyPatch,
     stream: io.StringIO,
+    no_color: str | None,
     *,
     drawn: bool,
 ) -> None:
-    monkeypatch.setattr("fss_cli._cp.sys", SimpleNamespace(stderr=stream))
-
-    with _progress_callback("src:/in/\x1bdata.bin") as callback:
-        callback.set_size(2048)
-        callback.relative_update(2048)
-
-    output = stream.getvalue()
-    if drawn:
-        assert "src:/in/\\x1bdata.bin" in output
-        assert "100%" in output
-        assert "2.00k" in output
+    monkeypatch.setattr("fss_cli._progress.sys", SimpleNamespace(stderr=stream))
+    if no_color is None:
+        monkeypatch.delenv("NO_COLOR", raising=False)
     else:
-        assert output == ""
+        monkeypatch.setenv("NO_COLOR", no_color)
+
+    assert _draws_progress() is drawn
+
+
+def _refuse_progress(*_args: object, **_kwargs: object) -> NoReturn:
+    message = "no Progress off a terminal"
+    raise AssertionError(message)
+
+
+def test_cp_draws_no_bar_when_stderr_is_not_a_terminal(monkeypatch: pytest.MonkeyPatch, clock: _Clock) -> None:
+    del clock
+    monkeypatch.setattr("fss_cli._progress.rich_progress.Progress", _refuse_progress)
+    source, destination = _cross_source([_file(_SIZE)])
+
+    result = _run_cross(source, destination)
+
+    assert (result.exit_code, result.stdout, result.stderr) == (
+        0,
+        "",
+        _cp_verified("dst:/out/data.bin", "uploaded", _SIZE),
+    )
+    assert [callback for _hook, callback in source.callbacks + destination.callbacks] == [
+        DEFAULT_CALLBACK,
+        DEFAULT_CALLBACK,
+    ]
+
+
+def test_cp_recursive_draws_no_bar_when_stderr_is_not_a_terminal(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("fss_cli._progress.rich_progress.Progress", _refuse_progress)
+    callbacks: list[object] = []
+
+    def record(filesystem: _TreeFileSystem) -> None:
+        for hook in ("_get_file", "_put_file"):
+            original = getattr(filesystem, hook)
+
+            async def recorded(*args: object, _original: Any = original, **kwargs: object) -> None:
+                callbacks.append(kwargs.get("callback"))
+                await _original(*args, **kwargs)
+
+            setattr(filesystem, hook, recorded)
+
+    result = _invoke(
+        "cp",
+        ["-R", "src:/docs", "dst:/out/copy"],
+        sources={
+            "src": _tree_source({"/": None, "/docs": None, "/docs/a.bin": b"aa"}, [], configure=record),
+            "dst": _tree_source({"/": None, "/out": None}, [], configure=record),
+        },
+    )
+
+    assert (result.exit_code, result.stdout, result.stderr) == (
+        0,
+        "",
+        _cp_verified("dst:/out/copy/a.bin", "uploaded", 2),
+    )
+    assert callbacks == [DEFAULT_CALLBACK, DEFAULT_CALLBACK]
+
+
+def test_cp_draws_no_bar_on_a_terminal_when_no_color_is_set(monkeypatch: pytest.MonkeyPatch, clock: _Clock) -> None:
+    del clock
+    terminal = _Terminal()
+    monkeypatch.setattr("fss_cli._progress.sys", SimpleNamespace(stderr=terminal))
+    monkeypatch.setattr("fss_cli._progress.rich_progress.Progress", _refuse_progress)
+    source, destination = _cross_source([_file(_SIZE)])
+
+    result = _invoke(
+        "cp",
+        ["src:/in/data.bin", "dst:/out/"],
+        sources={"src": _source(source), "dst": _source(destination)},
+        env={"NO_COLOR": "1"},
+    )
+
+    assert (result.exit_code, result.stdout, result.stderr) == (
+        0,
+        "",
+        _cp_verified("dst:/out/data.bin", "uploaded", _SIZE),
+    )
+    assert terminal.getvalue() == ""
+
+
+class _SlowFileSystem(_ScriptedFileSystem):
+    """Holds each download open until the terminal shows a drawn bar."""
+
+    def __init__(self, terminal: _Terminal, **kwargs: dict[str, bytes]) -> None:
+        super().__init__(**kwargs)
+        self.terminal = terminal
+
+    async def _get_file(
+        self,
+        rpath: str,
+        lpath: str,
+        callback: Callback = DEFAULT_CALLBACK,
+        **kwargs: object,
+    ) -> None:
+        del kwargs
+        payload = self.files[rpath]
+        callback.set_size(len(payload))
+        callback.relative_update(len(payload) // 2)
+        deadline = time.monotonic() + 5
+        while "download" not in self.terminal.getvalue() and time.monotonic() < deadline:
+            time.sleep(0.01)  # noqa: ASYNC251 - blocking lets Rich's refresh thread draw.
+        Path(lpath).write_bytes(payload)  # noqa: ASYNC240
+        callback.relative_update(len(payload) - len(payload) // 2)
+
+
+def test_cp_draws_the_bar_and_prints_outcome_lines_above_it_on_a_terminal(
+    monkeypatch: pytest.MonkeyPatch,
+    clock: _Clock,
+) -> None:
+    del clock
+    terminal = _Terminal()
+    monkeypatch.setattr("fss_cli._progress.sys", SimpleNamespace(stderr=terminal))
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    source = _SlowFileSystem(terminal, files={"/in/data.bin": _PAYLOAD})
+    destination = _ScriptedFileSystem(files={"/out/keep": b""})
+
+    result = _run_cross(source, destination)
+
+    drawn = strip_ansi(terminal.getvalue())
+    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+    assert "download src:/in/data.bin" in drawn
+    assert drawn.index("download src:/in/data.bin") < drawn.index(f"cp: dst:/out/data.bin: uploaded {_SIZE} bytes")
+    assert drawn.index(f"uploaded {_SIZE} bytes") < drawn.index(f"cp: dst:/out/data.bin: verified {_SIZE} bytes")
 
 
 def test_cp_outcome_line_write_failure_ends_the_copy(monkeypatch: pytest.MonkeyPatch) -> None:

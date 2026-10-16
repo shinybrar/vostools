@@ -38,7 +38,7 @@ from ._matrix_support import (
     _memory_source,
     _ProbedSource,
 )
-from ._support import _cp_verified, _source_must_not_run
+from ._support import _cp_verified, _source_must_not_run, _verified_uploads
 
 _SYNC_MV_MESSAGE = "public sync mv must not be called"
 
@@ -624,7 +624,9 @@ def test_adapted_local_recursive_cp_profile_uses_native_temporary_storage(
         ],
     )
 
-    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+    assert (result.exit_code, result.stdout) == (0, "")
+    copied = _local_command_path(destination_parent / "copy" / "nested" / "notes.txt")
+    assert _verified_uploads(result.stderr) == {f"local:{copied}": 5}
     assert (destination_parent / "copy" / "nested" / "notes.txt").read_bytes() == (b"notes")
     assert (destination_parent / "copy" / "empty").is_dir()
     assert all(isinstance(fs, AsyncFileSystemWrapper) for fs in source.filesystems)
@@ -689,7 +691,8 @@ def test_adapted_memory_recursive_cp_profile_has_isolated_state(
         ["-r", "memory:/source", "memory:/copy"],
     )
 
-    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+    assert (result.exit_code, result.stdout) == (0, "")
+    assert _verified_uploads(result.stderr) == {"memory:/copy/nested/notes.txt": 5}
     assert memory.cat("/copy/nested/notes.txt") == b"notes"
     assert memory.isdir("/copy/empty")
     assert all(isinstance(fs, AsyncFileSystemWrapper) for fs in source.filesystems)
@@ -742,7 +745,8 @@ def test_recursive_cp_between_distinct_adapted_source_names(
         ["-R", f"source:{source_path}", f"destination:{destination_path}"],
     )
 
-    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+    assert (result.exit_code, result.stdout) == (0, "")
+    assert _verified_uploads(result.stderr) == {f"destination:{destination_path}/notes.txt": 5}
     if destination_form == "local":
         assert (local_destination / "copy" / "notes.txt").read_bytes() == b"notes"
         assert (local_destination / "copy" / "empty").is_dir()
