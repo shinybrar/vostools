@@ -188,9 +188,10 @@ Stable categories: `not found`, `file exists`, `permission denied`,
     it as a plain failure and blindly retry — a retry can double-apply.
 
 `cp` is the one command that also writes to stderr when it succeeds: two
-outcome lines per file (`uploaded` or `copied`, then `verified`), in the same
-`<command>: <operand>: …` form, plus a byte progress bar when stderr is a
-terminal. Its stdout stays empty. A host that treats any stderr output as
+outcome lines per file written (`uploaded` or `copied`, then `verified`),
+including every file of a `cp -R`, in the same `<command>: <operand>: …` form.
+When stderr is a terminal and `NO_COLOR` is unset or empty, it also draws Rich
+progress bars there, one per file in flight. Its stdout stays empty. A host that treats any stderr output as
 failure should check the exit status instead. The
 [`cp` reference](commands.md#cp) lists every outcome line and the
 `--metadata-wait` option.

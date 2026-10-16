@@ -12,7 +12,7 @@
 >
 > **Partially superseded by
 > [Report `cp` progress and wait for destination metadata](./0011-report-cp-progress-and-wait-for-destination-metadata.md):**
-> `fss-cli` also requires `tqdm` at runtime.
+> `fss-cli` also requires `rich` at runtime.
 
 To support co-development now without coupling future extraction to `vosfs`,
 `fsspec-cli` will be a self-contained uv workspace member at `src/fsspec-cli`

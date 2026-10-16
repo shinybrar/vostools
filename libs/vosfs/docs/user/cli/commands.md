@@ -200,20 +200,32 @@ myapp fs cp --metadata-wait 300 local:/a.csv archive:/2026/a.csv
 Every copy verifies destination metadata after writing. Cross-filesystem copies
 stage through one local temporary.
 
-On a terminal, each transfer draws a byte progress bar on stderr: a
-cross-filesystem copy shows one for the download and one for the upload. When
-stderr is redirected there is no bar. A backend that does not report progress
-shows no bar either.
+On a terminal, each file being copied draws one byte progress bar on stderr.
+A cross-filesystem copy uses the same bar for both halves: it reads
+`download <source>` first, then `upload <destination>`. When the file is done
+its bar is removed. With `cp -R`, every file in flight has its own bar, so
+several move together:
 
-Each file then gets two lines on stderr, naming the file that was written —
-`archive:/2026/a.csv`, not the directory you typed. Stdout stays empty.
+```text
+cp: archive:/project/a.bin: uploaded 8388608 bytes
+upload archive:/project/b.bin     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━ 0:00:01
+upload archive:/project/sub/c.bin ━━━━━━━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━ 0:00:01
+```
+
+There is no bar when stderr is redirected, or when `NO_COLOR` is set. A backend
+that does not report progress shows no bar either.
+
+Each file then gets two lines on stderr, printed above any bars still moving
+and naming the file that was written — `archive:/2026/a.csv`, not the
+directory you typed. Stdout stays empty.
 
 ```text
 cp: archive:/2026/a.csv: uploaded 52428800 bytes
 cp: archive:/2026/a.csv: verified 52428800 bytes
 ```
 
-The first line says `copied` instead of `uploaded` within one filesystem. Exit
+The first line says `copied` instead of `uploaded` for a single file copied
+within one filesystem; `cp -R` always says `uploaded`. Exit
 status `0` means the destination reports a file of the source's size, and every
 checksum or ETag both sides report agrees.
 
@@ -260,6 +272,11 @@ cannot be read, the copy fails explicitly.
 Without checksums, equality checking reads both files: it saves destination
 writes, not necessarily network traffic. Extra destination files are retained.
 All skipped entries still participate in final verification.
+
+`cp -R` prints the two lines for each file it writes, as soon as that file is
+checked, so lines from parallel files can interleave. It waits for lagging
+metadata on each file the same way, under the same `--metadata-wait`. A
+skipped identical file prints nothing.
 
 Files are transferred concurrently, up to 16 at a time. After the first
 failure no new transfer starts; transfers already running finish, and the
