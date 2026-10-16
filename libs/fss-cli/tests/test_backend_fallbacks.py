@@ -113,9 +113,8 @@ def test_stat_and_listing_normalize_naive_time_as_utc(value: object) -> None:
     assert normalize_time(value) == _normalize_time(value) == expected
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("duplicate", ["/dst/f", "/dst//f", "dst/f"])
-async def test_duplicate_destination_rows_are_rejected_before_info_is_used(
+def test_duplicate_destination_rows_are_rejected_before_info_is_used(
     monkeypatch: pytest.MonkeyPatch, duplicate: str
 ) -> None:
     fs = _TreeFileSystem({"/dst": None, "/dst/f": b"data"}, [])
@@ -125,13 +124,12 @@ async def test_duplicate_destination_rows_are_rejected_before_info_is_used(
         return [{"name": "/dst/f", "type": "directory"}, {"name": duplicate, "type": "file", "size": 4}]
 
     monkeypatch.setattr(fs, "_ls", ls)
-    found, error = await infos_for_paths(fs, ["/dst/f"], missing_ok=False)
+    found, error = asyncio.run(infos_for_paths(fs, ["/dst/f"], missing_ok=False))
     assert error is not None
     assert not found
 
 
-@pytest.mark.asyncio
-async def test_sparse_destination_metadata_keeps_bounded_concurrency(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_sparse_destination_metadata_keeps_bounded_concurrency(monkeypatch: pytest.MonkeyPatch) -> None:
     paths = [f"/dst/{i}" for i in range(20)]
     fs = _TreeFileSystem({"/dst": None, **dict.fromkeys(paths, b"data")}, [])
     original = fs._info
@@ -151,7 +149,7 @@ async def test_sparse_destination_metadata_keeps_bounded_concurrency(monkeypatch
 
     monkeypatch.setattr(fs, "_ls", ls)
     monkeypatch.setattr(fs, "_info", info)
-    found, error = await infos_for_paths(fs, paths, missing_ok=False)
+    found, error = asyncio.run(infos_for_paths(fs, paths, missing_ok=False))
     assert error is None
     assert len(found) == 20
     assert 1 < peak <= 16
@@ -177,8 +175,7 @@ def test_find_accepts_backend_names_without_a_leading_slash(monkeypatch: pytest.
     assert "bucket/docs/f" in result.stdout
 
 
-@pytest.mark.asyncio
-async def test_metadata_index_matches_backend_names_without_a_leading_slash(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_metadata_index_matches_backend_names_without_a_leading_slash(monkeypatch: pytest.MonkeyPatch) -> None:
     calls = []
     fs = _TreeFileSystem({"/bucket/docs": None, "/bucket/docs/f": b"payload"}, calls)
 
@@ -187,7 +184,7 @@ async def test_metadata_index_matches_backend_names_without_a_leading_slash(monk
         return [{"name": "bucket/docs/f", "type": "file", "size": 7}]
 
     monkeypatch.setattr(fs, "_ls", ls)
-    found, error = await infos_for_paths(fs, ["/bucket/docs/f"], missing_ok=False)
+    found, error = asyncio.run(infos_for_paths(fs, ["/bucket/docs/f"], missing_ok=False))
     assert error is None
     assert found["/bucket/docs/f"] == {"name": "bucket/docs/f", "type": "file", "size": 7}
     assert not calls
