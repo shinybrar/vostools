@@ -63,6 +63,35 @@
 * Parameterize private command orchestration with concrete command labels
   without adding a supported command or public runner.
 
+## [0.11.0](https://github.com/shinybrar/vostools/compare/fss-cli-v0.10.0...fss-cli-v0.11.0) (2026-10-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **vosfs,fss-cli:** User paths are literal. Percent escapes are no longer decoded by strip_protocol; callers must pass spaces and other filename characters literally. Server-returned node URIs are still decoded once.
+* **fss-cli:** the distribution is now fss-cli and the import package is fss_cli. Replace fsspec-cli with fss-cli in requirements, and fsspec_cli with fss_cli in imports and logging configuration. No compatibility alias is provided.
+* **vosfs,fss-cli:** vosfs and fsspec-cli are now distributed under the GNU Affero General Public License v3.0 or later. vosfs 0.11.0, fsspec-cli 0.10.0 and earlier releases remain under the BSD 3-Clause License.
+
+### Features
+
+* **fss-cli:** bold directory names in ls on a terminal ([#24](https://github.com/shinybrar/vostools/issues/24)) ([6091bda](https://github.com/shinybrar/vostools/commit/6091bdade1070461e2a316ff8f75afe529102c22))
+* **fss-cli:** report cp progress and wait for destination metadata ([#25](https://github.com/shinybrar/vostools/issues/25)) ([aff77d0](https://github.com/shinybrar/vostools/commit/aff77d06bce8fcab7d098ec517797afdff6c50a9))
+
+
+### Bug Fixes
+
+* **vosfs,fss-cli:** preserve transfer fallbacks ([#27](https://github.com/shinybrar/vostools/issues/27)) ([4167f70](https://github.com/shinybrar/vostools/commit/4167f701a4fea08c0aec4c52b820938a103df9ec))
+
+
+### Code Refactoring
+
+* **fss-cli:** rename fsspec-cli to fss-cli ([#19](https://github.com/shinybrar/vostools/issues/19)) ([79df0e1](https://github.com/shinybrar/vostools/commit/79df0e14222d472ae731aa2d43b5b0b31bd48b8f))
+
+
+### Build System
+
+* **vosfs,fss-cli:** relicense under AGPL-3.0-or-later ([#18](https://github.com/shinybrar/vostools/issues/18)) ([ae7712e](https://github.com/shinybrar/vostools/commit/ae7712ee9e9d1b817e6d2f4ccbef2da00fe89b8a))
+
 ## [0.10.0](https://github.com/shinybrar/vosfs/compare/fsspec-cli-v0.9.0...fsspec-cli-v0.10.0) (2026-10-04)
 
 
